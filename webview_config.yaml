@@ -1,0 +1,293 @@
+webview_config:
+  app:
+    # The primary domain your WebView should treat as first-party (host only; no scheme/path).
+    # e.g. "example.com", "app.example.com", "localhost"
+    host: "YOUR_PRIMARY_HOST_HERE"
+
+    # The initial URL to load in the WebView (includes scheme and optional path/fragment).
+    # e.g. "https://example.com/", "https://app.example.com/#/dashboard", "http://localhost:3000"
+    home_url: "https://YOUR_PRIMARY_HOST_HERE/"
+
+    orientation: "auto"          # auto | portrait | landscape
+    debug_webview: true
+    cleartext_permitted: false
+    user_agent:
+      mode: "append"             # system | append | custom
+      append: " WebSight/1.0"
+      custom: null
+
+  # ------------------ WEBVIEW ENGINE ------------------
+  navigation:
+    # Open links to non-allowlisted hosts in the external browser (Custom Tabs).
+    open_external_links_in_browser: true
+
+    # Put your own host first. Add others only if users routinely visit them from your app.
+    external_allowlist:
+      - "YOUR_PRIMARY_HOST_HERE"
+      # - "explorer.example.com"
+      # - "status.example.com"
+
+    # Handle common native schemes (phone, email, maps, Play intents, etc.).
+    handle_schemes:
+      tel: true
+      mailto: true
+      intent: true
+      geo: true
+      market: true
+
+    # Allow target=_blank / window.open; these are routed to Custom Tabs by default.
+    multiple_windows: true
+
+    # Deep link verification for your host(s). Mirror app.host here.
+    deep_links:
+      enable: true
+      hosts:
+        - "YOUR_PRIMARY_HOST_HERE"
+
+  # ------------------ WEBVIEW SETTINGS (GLOBAL DEFAULTS) ------------------
+  webview_settings:
+    javascript_enabled: true
+    dom_storage_enabled: true
+    database_enabled: true
+    media_playback_requires_gesture: true
+    mixed_content: "never"        # never | compatibility | always
+    allow_file_access_from_file_urls: false
+    allow_universal_access_from_file_urls: false
+    user_gesture_required_for_file_chooser: true
+    cache_mode: "default"
+    custom_user_scripts:
+      inject_css:
+        enabled: true
+        asset_path: "website/css/custom.css"
+      inject_js:
+        enabled: false
+        asset_path: "website/js/test.js"
+
+  file_uploads:
+    enabled: true
+    capture_camera: true
+    mime_types: ["*/*"]
+
+  downloads:
+    enabled: true
+    use_android_download_manager: true
+    support_blob_urls: true
+    notifications: "visible_notify_completed"
+    meter_policy: "allow_metered"
+    filename_strategy: "guess"
+    destination: "public_downloads"
+
+  pull_to_refresh:
+    enabled: true
+    top_threshold_dp: 50
+
+  splash:
+    enabled: false
+    timeout_ms: 2500
+
+  offline_local_html:
+    open_local_by_default: false
+    index_asset: "index.html"
+    fallback_when_offline: false
+
+  ui:
+    loading_indicator: true
+    titlebar_tint: "white"
+    titlebar_bg: "#000000"
+
+  rating_prompt:
+    enabled: true
+    after_launches: 3
+
+  ads:
+    enabled: true
+    consent_gate_with_ump: true
+    placements:
+      global_banner:
+        screen_scope: "all"               # all | route
+        route: null
+        format: "banner_adaptive"         # banner_adaptive | banner_collapsible
+        position: "bottom"                # top | bottom
+        refresh_seconds: 60
+      home_collapsible:
+        screen_scope: "route"
+        route: "/web/home"
+        format: "banner_collapsible"
+        collapse_frequency_minutes: 4
+        max_expanded_seconds: 30
+        expand_on_launch: true
+    interstitials:
+      enabled: false
+      show_after_clicks: 7
+    rewarded:
+      enabled: false
+
+  billing:
+    inapp_enabled: true
+    product_ids: ["product1","product2"]
+
+  barcode_scanner:
+    enabled: true
+    provider: "mlkit"              # mlkit | zxing | plugin
+    formats: ["qr_code","code_128","ean_13"]
+    js_api_name: "WebSightBridge"
+    camera_permission_runtime: true
+
+  js_bridge:
+    enabled: true
+    name: "WebSightBridge"
+    methods:
+      - "scanBarcode(callbackFn)"
+      - "share(text)"
+      - "getDeviceInfo()"
+      - "downloadBlob(url, filename?)"
+      - "openExternal(url)"
+    secure_origin_only: true
+    inbound_events:
+      - event: "openNative"
+        args: ["route"]
+        action: "navigate:{route}"
+      - event: "toast"
+        args: ["message"]
+        action: "ui.toast:{message}"
+
+  security:
+    # Lock main-frame navigations to your first-party host(s). Keep in sync with app.host.
+    restrict_to_hosts:
+      - "YOUR_PRIMARY_HOST_HERE"
+    block_file_scheme_navigation: true
+    block_about_blank_navigation: true
+    verify_ssl_errors: "block"     # block | proceed_debug_only
+
+  analytics_crash:
+    analytics: true
+    crashlytics: true
+
+  updates:
+    in_app_updates: "flexible"     # none | flexible | immediate
+    play_integrity: true
+
+  notifications:
+    post_notifications_permission: true
+    fcm_enabled: false
+
+  behavior_overrides:
+    back_button:
+      webview_go_back_if_possible: true
+      confirm_before_exit: true
+    error_pages:
+      show_offline_page: true
+      retry_button: true
+
+  # ------------------ FLUTTER UI/UX LAYER ------------------
+  flutter_ui:
+    enabled: true
+
+    theme:
+      brightness: "dark"         # light | dark | system
+      primary: "#16A34A"
+      surface: "#0B0B0C"
+      on_surface: "#F5F5F5"
+      use_material3: true
+      font_family: "Inter"
+
+    layout:
+      scaffold: "drawer"         # drawer | bottom_tabs | top_tabs | none
+
+      appbar:
+        visible: true
+        title_mode: "route"      # route | static
+        static_title: "WebSight"
+        center_title: false
+        actions:
+          - id: "search"
+            icon: "Icons.search"
+            action: "navigate:/search"
+          - id: "refresh"
+            icon: "Icons.refresh"
+            action: "webview.reload"
+
+      drawer:
+        visible: true
+        header:
+          title: "WebSight"
+          subtitle: "Explorer"
+          avatar_asset: "assets/logo.png"
+        items:
+          - title: "Home"
+            icon: "Icons.home_outlined"
+            route: "/web/home"
+          - title: "Watchlist"
+            icon: "Icons.star_border"
+            route: "/native/watchlist"
+          - title: "Scan"
+            icon: "Icons.qr_code_scanner"
+            action: "bridge.scanBarcode(onScan)"
+          - title: "Settings"
+            icon: "Icons.settings_outlined"
+            route: "/native/settings"
+        footer_items:
+          - title: "Rate app"
+            icon: "Icons.thumb_up_off_alt"
+            action: "store.rate"
+          - title: "Privacy"
+            icon: "Icons.privacy_tip_outlined"
+            route: "/web/privacy"
+
+      bottom_tabs:
+        visible: false
+        initial_index: 0
+        items:
+          - label: "Home"
+            icon: "Icons.public"
+            route: "/web/home"
+          - label: "Portfolio"
+            icon: "Icons.account_balance_wallet_outlined"
+            route: "/native/portfolio"
+          - label: "Alerts"
+            icon: "Icons.notifications_none"
+            route: "/native/alerts"
+
+      floating_action_button:
+        visible: false
+        icon: "Icons.add"
+        action: "navigate:/native/new-alert"
+
+    routes:
+      # Primary web entry point. Keep URL consistent with app.home_url above.
+      - path: "/web/home"
+        kind: "webview"
+        title: "Home"
+        url: "https://YOUR_PRIMARY_HOST_HERE/"
+        pull_to_refresh: true
+        appbar_visible: true
+
+      # Example parameterized web route; replace with your actual pages.
+      - path: "/web/item"
+        kind: "webview"
+        title: "Item"
+        url: "https://YOUR_PRIMARY_HOST_HERE/#/item/{id}"
+        params: ["id"]
+
+      # Native screens (stubs)
+      - path: "/native/watchlist"
+        kind: "native"
+        title: "Watchlist"
+        widget: "WatchlistScreen"
+      - path: "/native/portfolio"
+        kind: "native"
+        title: "Portfolio"
+        widget: "PortfolioScreen"
+      - path: "/native/alerts"
+        kind: "native"
+        title: "Alerts"
+        widget: "AlertsScreen"
+      - path: "/native/settings"
+        kind: "native"
+        title: "Settings"
+        widget: "SettingsScreen"
+
+    sheets:
+      - id: "networkPicker"
+        title: "Select Network"
+        widget: "NetworkPickerSheet"
