@@ -1,104 +1,90 @@
 # Welcome to the WebSight Configuration File!
 # This file is the single source of truth that defines your entire application.
-# Use this guide to customize your app's branding, layout, features, and behavior.
+# To get started, you can rename this file to `webview_config.yaml` and build the app.
+# It is pre-configured to create a demo app for the official Flutter website.
 
 # -----------------------------------------------------------------------------
 # [CORE APP IDENTITY]
 # -----------------------------------------------------------------------------
 app:
   # The name of your application as it will appear in the UI.
-  name: "WebSight"
+  name: "WebSight Demo" # Default: "WebSight"
 
   # The primary domain your WebView should treat as first-party.
   # CRITICAL: This MUST match your website's host. Do not include 'https://' or paths.
-  # e.g., "example.com", "app.your-saas.com"
-  host: "YOUR_PRIMARY_HOST_HERE"
+  host: "flutter.dev" # Default: "YOUR_PRIMARY_HOST_HERE"
 
   # The full initial URL to load when the app starts.
-  # This MUST start with 'https://' and the host must match the 'host' field above.
-  home_url: "https://YOUR_PRIMARY_HOST_HERE/"
+  home_url: "https://flutter.dev/" # Default: "https://YOUR_PRIMARY_HOST_HERE/"
 
 # -----------------------------------------------------------------------------
 # [FLUTTER UI/UX LAYER]
 # This section controls the native Flutter shell around your web content.
 # -----------------------------------------------------------------------------
 flutter_ui:
-  # --- THEME ---
-  # Defines the look and feel of the native UI components.
   theme:
     # The overall brightness of the app's native UI.
-    # Options: "light", "dark", "system" (follows the OS setting)
-    brightness: "system"
+    # Options: "light", "dark", "system"
+    brightness: "dark" # Default: "system"
 
-    # The primary seed color for the entire app. All other colors in the theme
-    # (buttons, highlights, etc.) will be algorithmically generated from this color.
-    # Use a hex color string.
-    primary: "#16A34A" # A nice green
+    # The primary seed color for the entire app.
+    # All other colors will be algorithmically generated from this color.
+    primary: "#0175C2" # Default: "#16A34A"
 
     # (Optional) Override the main background color.
-    # surface: "#0B0B0C"
+    # surface: "#0B0B0C" # Default: null
 
     # (Optional) Override the color of text and icons on the main background.
-    # on_surface: "#F5F5F5"
+    # on_surface: "#F5F5F5" # Default: null
 
     # Whether to use the modern Material 3 design system. Highly recommended.
-    use_material3: true
+    use_material3: true # Default: true
 
     # (Optional) The name of a font from fonts.google.com to apply to all native UI.
-    # Example: "Roboto", "Inter", "Open Sans"
-    font_family: "Inter"
+    font_family: "Inter" # Default: null
 
-  # --- LAYOUT ---
-  # Defines the primary navigation structure and layout of the native shell.
   layout:
     # The main navigation style for the app.
-    # Options:
-    #   "drawer": A classic slide-out navigation menu (hamburger menu).
-    #   "bottom_tabs": A persistent navigation bar at the bottom of the screen.
-    #   "top_tabs": Tabs displayed at the top of the screen, below the AppBar.
-    #   "none": No persistent navigation. The WebView will be fullscreen.
-    scaffold: "drawer"
+    # Options: "drawer", "bottom_tabs", "top_tabs", "none"
+    scaffold: "drawer" # Default: "drawer"
 
-    # Defines the AppBar (the bar at the top of the screen).
     appbar:
       # Whether the AppBar is visible by default. Can be overridden per route.
-      visible: true
+      visible: true # Default: true
       # A list of icon buttons to display on the right side of the AppBar.
       actions:
-        - id: "refresh" # A unique ID for the action
-          icon: "Icons.refresh" # The name of a Material Design Icon
-          action: "webview.reload" # The action to perform. 'webview.reload' is a built-in action.
-        - id: "search"
-          icon: "Icons.search"
-          action: "navigate:/native/settings" # 'navigate:' followed by a route path.
+        - id: "refresh"
+          icon: "Icons.refresh"
+          action: "webview.reload"
+        - id: "settings"
+          icon: "Icons.settings_outlined"
+          action: "navigate:/native/settings"
 
     # Whether to show a Floating Action Button (FAB).
-    visible: false
+    visible: false # Default: false
 
 # -----------------------------------------------------------------------------
 # [ROUTES & NAVIGATION]
 # Defines all the screens (both web and native) in your app.
 # -----------------------------------------------------------------------------
 routes:
-  # The first route is typically the home page.
   - path: "/web/home"
-    kind: "webview" # This screen is a WebView.
-    title: "Home" # Title used in the AppBar.
-    label: "Home" # Label used in drawers/tabs.
-    icon: "Icons.home_outlined" # Icon used in drawers/tabs.
-    url: "https://YOUR_PRIMARY_HOST_HERE/" # The URL this route loads.
-    appbar_visible: true # Overrides the global AppBar visibility for this route.
-    pull_to_refresh: true # Enable the pull-to-refresh gesture on this route.
+    kind: "webview"
+    title: "Flutter Home"
+    label: "Home"
+    icon: "Icons.home_outlined"
+    url: "https://flutter.dev/"
+    appbar_visible: true # Default: true
+    pull_to_refresh: true # Default: false
 
-  # An example of a native Flutter screen.
   - path: "/native/watchlist"
-    kind: "native" # This screen is a native Flutter widget.
+    kind: "native"
     title: "Watchlist"
     label: "Watchlist"
     icon: "Icons.star_border"
     appbar_visible: true
-    pull_to_refresh: false # Pull to refresh has no effect on native screens.
-
+    pull_to_refresh: false
+    
   - path: "/native/portfolio"
     kind: "native"
     title: "Portfolio"
@@ -125,41 +111,32 @@ routes:
 
 # -----------------------------------------------------------------------------
 # [WEBVIEW ENGINE]
-# Global settings that control the behavior of the WebView itself.
 # -----------------------------------------------------------------------------
 navigation:
-  # A list of external domains that the WebView is allowed to navigate to.
-  # If a URL's host is not in 'security.restrict_to_hosts' but IS in this list,
-  # it will be opened in an external browser (e.g., Chrome Custom Tabs).
+  # External domains that, if navigated to, will open in an external browser.
   external_allowlist:
     - "google.com"
-    - "flutter.dev"
+    - "github.com"
+    - "dart.dev"
 
-  # Deep link configuration for Android.
   deep_links:
-    enable: true
-    # This list of hosts will be added to the Android Manifest to handle deep links.
+    enable: true # Default: true
     hosts:
-      - "YOUR_PRIMARY_HOST_HERE"
+      - "flutter.dev" # Default: ["YOUR_PRIMARY_HOST_HERE"]
 
 webview_settings:
-  # Whether to enable JavaScript in the WebView.
-  javascript_enabled: true
-  # Whether to enable DOM Storage (localStorage/sessionStorage).
-  dom_storage_enabled: true
+  javascript_enabled: true # Default: true
+  dom_storage_enabled: true # Default: true
 
 # -----------------------------------------------------------------------------
 # [JAVASCRIPT BRIDGE]
-# Connects your web app to native device features.
 # -----------------------------------------------------------------------------
 js_bridge:
-  enabled: true
-  name: "WebSightBridge" # The name of the JS object, e.g., `window.WebSightBridge`.
-  
-  # If true, the bridge is only injected into pages matching 'security.restrict_to_hosts'.
-  secure_origin_only: true
+  enabled: true # Default: true
+  name: "WebSightBridge" # Default: "WebSightBridge"
+  secure_origin_only: true # Default: true
 
-  # A list of outbound methods (JS calling native) that are enabled.
+  # Outbound methods (JS calling native).
   methods:
     - "scanBarcode(callbackFn)"
     - "share(text)"
@@ -167,78 +144,63 @@ js_bridge:
     - "downloadBlob(url, filename?)"
     - "openExternal(url)"
 
-  # A list of inbound events (JS dispatching to native) that are enabled.
+  # Inbound events (JS dispatching to native).
   inbound_events:
     - event: "openNative"
       args: ["route"]
-      action: "navigate:{route}" # Navigates to a Flutter route.
+      action: "navigate:{route}"
     - event: "toast"
       args: ["message"]
-      action: "ui.toast:{message}" # Shows a native toast/snackbar.
+      action: "ui.toast:{message}"
 
 # -----------------------------------------------------------------------------
 # [SECURITY]
 # -----------------------------------------------------------------------------
 security:
-  # The list of hosts the WebView is allowed to navigate to internally.
-  # Any navigation to a host NOT in this list will be blocked or opened externally.
-  # CRITICAL: This MUST contain your primary `app.host`.
+  # List of hosts the WebView is allowed to navigate to internally.
   restrict_to_hosts:
-    - "YOUR_PRIMARY_HOST_HERE"
+    - "flutter.dev" # Default: ["YOUR_PRIMARY_HOST_HERE"]
 
 # -----------------------------------------------------------------------------
 # [MONETIZATION & COMPLIANCE]
 # -----------------------------------------------------------------------------
 ads:
-  enabled: true
-  # If true, the Google UMP consent form will be shown on first launch if required.
-  # Ads will NOT be loaded until consent is properly handled.
-  consent_gate_with_ump: true
+  enabled: true # Default: true
+  consent_gate_with_ump: true # Default: true
   
   placements:
-    # A global fallback banner ad that will be shown on any route that doesn't
-    # have a specific `route_placements` rule.
+    # A global fallback banner ad.
     global_banner:
       screen_scope: "all"
-      format: "banner_adaptive" # A standard, adaptive banner.
-      position: "bottom" # 'top' or 'bottom'.
-      # CRITICAL: Replace with your real AdMob Ad Unit ID.
-      ad_unit_id: "ca-app-pub-3940256099942544/6300978111" # Example ID
+      format: "banner_adaptive"
+      position: "bottom"
+      # This is Google's example Ad Unit ID for testing.
+      ad_unit_id: "ca-app-pub-3940256099942544/6300978111"
 
-    # A map of route-specific ad placements.
+    # Route-specific ad placements.
     route_placements:
-      # A unique key for this placement rule.
       home_collapsible_banner:
         screen_scope: "route"
-        route: "/web/home" # The route this ad will appear on.
-        format: "banner_collapsible" # A collapsible banner ad.
+        route: "/web/home"
+        format: "banner_collapsible"
         position: "bottom"
-        # CRITICAL: Replace with your real AdMob Ad Unit ID.
-        ad_unit_id: "ca-app-pub-3940256099942544/6300978111" # Example ID
+        ad_unit_id: "ca-app-pub-3940256099942544/6300978111"
 
 # -----------------------------------------------------------------------------
 # [APP LIFECYCLE & POLISH]
 # -----------------------------------------------------------------------------
 updates:
-  # The in-app update mode.
-  # "none": No in-app updates.
-  # "flexible": Shows a background download prompt (recommended).
-  # "immediate": Forces a fullscreen update screen.
-  in_app_updates: "flexible"
+  # In-app update mode. Options: "none", "flexible", "immediate"
+  in_app_updates: "flexible" # Default: "flexible"
 
 analytics_crash:
-  # If true, enables Firebase Analytics and automatic screen view tracking.
-  analytics: true
-  # If true, enables Firebase Crashlytics for crash reporting.
-  crashlytics: true
+  analytics: true # Default: true
+  crashlytics: true # Default: true
 
 notifications:
-  # If true, the app will request permission to show notifications on Android 13+.
-  post_notifications_permission: true
-  # This feature is planned for a future build.
-  fcm_enabled: false
+  post_notifications_permission: true # Default: true
+  fcm_enabled: false # Default: false
 
 behavior_overrides:
   back_button:
-    # If true, the back button will close the app only after the user confirms in a dialog.
-    confirm_before_exit: true
+    confirm_before_exit: true # Default: true
