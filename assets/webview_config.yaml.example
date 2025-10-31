@@ -8,14 +8,14 @@
 # -----------------------------------------------------------------------------
 app:
   # The name of your application as it will appear in the UI.
-  name: "WebSight Demo" # Default: "WebSight"
+  name: "WebSight Demo"
 
   # The primary domain your WebView should treat as first-party.
   # CRITICAL: This MUST match your website's host. Do not include 'https://' or paths.
-  host: "flutter.dev" # Default: "YOUR_PRIMARY_HOST_HERE"
+  host: "flutter.dev"
 
   # The full initial URL to load when the app starts.
-  home_url: "https://flutter.dev/" # Default: "https://YOUR_PRIMARY_HOST_HERE/"
+  home_url: "https://flutter.dev/"
 
 # -----------------------------------------------------------------------------
 # [FLUTTER UI/UX LAYER]
@@ -25,32 +25,32 @@ flutter_ui:
   theme:
     # The overall brightness of the app's native UI.
     # Options: "light", "dark", "system"
-    brightness: "dark" # Default: "system"
+    brightness: "dark"
 
     # The primary seed color for the entire app.
     # All other colors will be algorithmically generated from this color.
-    primary: "#0175C2" # Default: "#16A34A"
+    primary: "#0175C2"
 
     # (Optional) Override the main background color.
-    # surface: "#0B0B0C" # Default: null
+    # surface: "#0B0B0C"
 
     # (Optional) Override the color of text and icons on the main background.
-    # on_surface: "#F5F5F5" # Default: null
+    # on_surface: "#F5F5F5"
 
     # Whether to use the modern Material 3 design system. Highly recommended.
-    use_material3: true # Default: true
+    use_material3: true
 
     # (Optional) The name of a font from fonts.google.com to apply to all native UI.
-    font_family: "Inter" # Default: null
+    font_family: "Inter"
 
   layout:
     # The main navigation style for the app.
     # Options: "drawer", "bottom_tabs", "top_tabs", "none"
-    scaffold: "drawer" # Default: "drawer"
+    scaffold: "drawer"
 
     appbar:
       # Whether the AppBar is visible by default. Can be overridden per route.
-      visible: true # Default: true
+      visible: true
       # A list of icon buttons to display on the right side of the AppBar.
       actions:
         - id: "refresh"
@@ -61,7 +61,7 @@ flutter_ui:
           action: "navigate:/native/settings"
 
     # Whether to show a Floating Action Button (FAB).
-    visible: false # Default: false
+    visible: false
 
 # -----------------------------------------------------------------------------
 # [ROUTES & NAVIGATION]
@@ -74,8 +74,8 @@ routes:
     label: "Home"
     icon: "Icons.home_outlined"
     url: "https://flutter.dev/"
-    appbar_visible: true # Default: true
-    pull_to_refresh: true # Default: false
+    appbar_visible: true
+    pull_to_refresh: true
 
   - path: "/native/watchlist"
     kind: "native"
@@ -120,21 +120,21 @@ navigation:
     - "dart.dev"
 
   deep_links:
-    enable: true # Default: true
+    enable: true
     hosts:
-      - "flutter.dev" # Default: ["YOUR_PRIMARY_HOST_HERE"]
+      - "flutter.dev"
 
 webview_settings:
-  javascript_enabled: true # Default: true
-  dom_storage_enabled: true # Default: true
+  javascript_enabled: true
+  dom_storage_enabled: true
 
 # -----------------------------------------------------------------------------
 # [JAVASCRIPT BRIDGE]
 # -----------------------------------------------------------------------------
 js_bridge:
-  enabled: true # Default: true
-  name: "WebSightBridge" # Default: "WebSightBridge"
-  secure_origin_only: true # Default: true
+  enabled: true
+  name: "WebSightBridge"
+  secure_origin_only: true
 
   # Outbound methods (JS calling native).
   methods:
@@ -159,14 +159,14 @@ js_bridge:
 security:
   # List of hosts the WebView is allowed to navigate to internally.
   restrict_to_hosts:
-    - "flutter.dev" # Default: ["YOUR_PRIMARY_HOST_HERE"]
+    - "flutter.dev"
 
 # -----------------------------------------------------------------------------
 # [MONETIZATION & COMPLIANCE]
 # -----------------------------------------------------------------------------
 ads:
-  enabled: true # Default: true
-  consent_gate_with_ump: true # Default: true
+  enabled: true
+  consent_gate_with_ump: true
   
   placements:
     # A global fallback banner ad.
@@ -191,16 +191,16 @@ ads:
 # -----------------------------------------------------------------------------
 updates:
   # In-app update mode. Options: "none", "flexible", "immediate"
-  in_app_updates: "flexible" # Default: "flexible"
+  in_app_updates: "flexible"
 
 analytics_crash:
-  analytics: true # Default: true
-  crashlytics: true # Default: true
+  analytics: true
+  crashlytics: true
 
 notifications:
-  post_notifications_permission: true # Default: true
-  fcm_enabled: false # Default: false
+  post_notifications_permission: true
+  fcm_enabled: false
 
 behavior_overrides:
   back_button:
-    confirm_before_exit: true # Default: true
+    confirm_before_exit: true
