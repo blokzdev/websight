@@ -1,0 +1,127 @@
+{
+  "project_info": {
+    "project_number": "10443454698",
+    "project_id": "blokz-a0a54",
+    "storage_bucket": "blokz-a0a54.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:10443454698:android:30400e5466101a0686bf93",
+        "android_client_info": {
+          "package_name": "com.app.blokz"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "10443454698-hon00ht3v2vlpnt0p1oncovu8d5fkb6b.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.app.blokz",
+            "certificate_hash": "93fca597d4a1587672c9762c32d599aa8a45bd25"
+          }
+        },
+        {
+          "client_id": "10443454698-1sakqacclbo4ot4gfmru2l6b6f44quuc.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAte9vC9-Evc-0yKJd5EjzLrpnvEPKo5yc"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "10443454698-1sakqacclbo4ot4gfmru2l6b6f44quuc.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "10443454698-farh10t6dmgkesbc6aik73gpn6s3ngii.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "mx.blokz.blokzMobile"
+              }
+            }
+          ]
+        }
+      },
+      "admob_app_id": "ca-app-pub-7751391180855571~7230625627"
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:10443454698:android:be0914945d2eac0c86bf93",
+        "android_client_info": {
+          "package_name": "com.app.websight"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "10443454698-1sakqacclbo4ot4gfmru2l6b6f44quuc.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAte9vC9-Evc-0yKJd5EjzLrpnvEPKo5yc"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "10443454698-1sakqacclbo4ot4gfmru2l6b6f44quuc.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "10443454698-farh10t6dmgkesbc6aik73gpn6s3ngii.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "mx.blokz.blokzMobile"
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:10443454698:android:7b9a30918606cdc386bf93",
+        "android_client_info": {
+          "package_name": "mx.blokz.blokz_mobile"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "10443454698-1sakqacclbo4ot4gfmru2l6b6f44quuc.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAte9vC9-Evc-0yKJd5EjzLrpnvEPKo5yc"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "10443454698-1sakqacclbo4ot4gfmru2l6b6f44quuc.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "10443454698-farh10t6dmgkesbc6aik73gpn6s3ngii.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "mx.blokz.blokzMobile"
+              }
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
