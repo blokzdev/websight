@@ -1,107 +1,206 @@
+# Welcome to the WebSight Configuration File!
+# This file is the single source of truth that defines your entire application.
+# To get started, you can rename this file to `webview_config.yaml` and build the app.
+# It is pre-configured to create a demo app for the official Flutter website.
+
+# -----------------------------------------------------------------------------
+# [CORE APP IDENTITY]
+# -----------------------------------------------------------------------------
 app:
-  name: "WebSight"
-  host: "YOUR_PRIMARY_HOST_HERE" # Auto-synced to allowlists
-  home_url: "https://YOUR_PRIMARY_HOST_HERE"
-  debug_mode: true
+  # The name of your application as it will appear in the UI.
+  name: "WebSight Demo"
 
-layout:
-  style: "drawer" # "drawer", "bottom_tabs", "top_tabs", "none"
-  show_app_bar: true
-  show_fab: false
+  # The primary domain your WebView should treat as first-party.
+  # CRITICAL: This MUST match your website's host. Do not include 'https://' or paths.
+  host: "flutter.dev"
 
+  # The full initial URL to load when the app starts.
+  home_url: "https://flutter.dev/"
+
+# -----------------------------------------------------------------------------
+# [FLUTTER UI/UX LAYER]
+# This section controls the native Flutter shell around your web content.
+# -----------------------------------------------------------------------------
+flutter_ui:
+  theme:
+    # The overall brightness of the app's native UI.
+    # Options: "light", "dark", "system"
+    brightness: "dark"
+
+    # The primary seed color for the entire app.
+    # All other colors will be algorithmically generated from this color.
+    primary: "#0175C2"
+
+    # (Optional) Override the main background color.
+    # surface: "#0B0B0C"
+
+    # (Optional) Override the color of text and icons on the main background.
+    # on_surface: "#F5F5F5"
+
+    # Whether to use the modern Material 3 design system. Highly recommended.
+    use_material3: true
+
+    # (Optional) The name of a font from fonts.google.com to apply to all native UI.
+    font_family: "Inter"
+
+  layout:
+    # The main navigation style for the app.
+    # Options: "drawer", "bottom_tabs", "top_tabs", "none"
+    scaffold: "drawer"
+
+    appbar:
+      # Whether the AppBar is visible by default. Can be overridden per route.
+      visible: true
+      # A list of icon buttons to display on the right side of the AppBar.
+      actions:
+        - id: "refresh"
+          icon: "Icons.refresh"
+          action: "webview.reload"
+        - id: "settings"
+          icon: "Icons.settings_outlined"
+          action: "navigate:/native/settings"
+
+    # Whether to show a Floating Action Button (FAB).
+    visible: false
+
+# -----------------------------------------------------------------------------
+# [ROUTES & NAVIGATION]
+# Defines all the screens (both web and native) in your app.
+# -----------------------------------------------------------------------------
+routes:
+  - path: "/web/home"
+    kind: "webview"
+    title: "Flutter Home"
+    label: "Home"
+    icon: "Icons.home_outlined"
+    url: "https://flutter.dev/"
+    appbar_visible: true
+    pull_to_refresh: true
+
+  - path: "/native/watchlist"
+    kind: "native"
+    title: "Watchlist"
+    label: "Watchlist"
+    icon: "Icons.star_border"
+    appbar_visible: true
+    pull_to_refresh: false
+    
+  - path: "/native/portfolio"
+    kind: "native"
+    title: "Portfolio"
+    label: "Portfolio"
+    icon: "Icons.account_balance_wallet_outlined"
+    appbar_visible: true
+    pull_to_refresh: false
+    
+  - path: "/native/alerts"
+    kind: "native"
+    title: "Alerts"
+    label: "Alerts"
+    icon: "Icons.notifications_none"
+    appbar_visible: true
+    pull_to_refresh: false
+
+  - path: "/native/settings"
+    kind: "native"
+    title: "Settings"
+    label: "Settings"
+    icon: "Icons.settings_outlined"
+    appbar_visible: true
+    pull_to_refresh: false
+
+# -----------------------------------------------------------------------------
+# [WEBVIEW ENGINE]
+# -----------------------------------------------------------------------------
 navigation:
+  # External domains that, if navigated to, will open in an external browser.
   external_allowlist:
-    - "YOUR_PRIMARY_HOST_HERE" # Must contain app.host
-  deep_links:
-    enabled: true
-    hosts:
-      - "YOUR_PRIMARY_HOST_HERE" # Must contain app.host
-      - "www.YOUR_PRIMARY_HOST_HERE"
+    - "google.com"
+    - "github.com"
+    - "dart.dev"
 
-security:
-  restrict_to_hosts:
-    - "YOUR_PRIMARY_HOST_HERE" # Must contain app.host
-  secure_bridge_origin_only: true
-  block_cleartext: true
+  deep_links:
+    enable: true
+    hosts:
+      - "flutter.dev"
 
 webview_settings:
-  user_agent: "WebSight/{version} (Android)"
-  javascript_mode: "unrestricted" # "unrestricted" or "disabled"
+  javascript_enabled: true
   dom_storage_enabled: true
-  allow_file_access: true
-  display_zoom_controls: false
-  use_wide_view_port: true
-  load_with_overview_mode: true
-  debug_webview: false
-  inject_css: true
-  inject_js: true
 
+# -----------------------------------------------------------------------------
+# [JAVASCRIPT BRIDGE]
+# -----------------------------------------------------------------------------
 js_bridge:
   enabled: true
   name: "WebSightBridge"
-  methods:
-    - "scanBarcode"
-    - "share"
-    - "getDeviceInfo"
-    - "downloadBlob"
-    - "openExternal"
-    - "openNative"
-    - "toast"
+  secure_origin_only: true
 
+  # Outbound methods (JS calling native).
+  methods:
+    - "scanBarcode(callbackFn)"
+    - "share(text)"
+    - "getDeviceInfo()"
+    - "downloadBlob(url, filename?)"
+    - "openExternal(url)"
+
+  # Inbound events (JS dispatching to native).
+  inbound_events:
+    - event: "openNative"
+      args: ["route"]
+      action: "navigate:{route}"
+    - event: "toast"
+      args: ["message"]
+      action: "ui.toast:{message}"
+
+# -----------------------------------------------------------------------------
+# [SECURITY]
+# -----------------------------------------------------------------------------
+security:
+  # List of hosts the WebView is allowed to navigate to internally.
+  restrict_to_hosts:
+    - "flutter.dev"
+
+# -----------------------------------------------------------------------------
+# [MONETIZATION & COMPLIANCE]
+# -----------------------------------------------------------------------------
 ads:
   enabled: true
-  provider: "admob"
-  consent_mode: "ump" # "ump" or "none"
-  global_banner:
-    placement: "bottom" # "top" or "bottom"
-    type: "adaptive" # "adaptive" or "collapsible"
-  per_route_banners:
-    - route: "/web/home"
-      placement: "bottom"
-      type: "collapsible"
-      collapsible_details:
-        position: "bottom" # or "top"
-        max_height: 100
+  consent_gate_with_ump: true
+  
+  placements:
+    # A global fallback banner ad.
+    global_banner:
+      screen_scope: "all"
+      format: "banner_adaptive"
+      position: "bottom"
+      # This is Google's example Ad Unit ID for testing.
+      ad_unit_id: "ca-app-pub-3940256099942544/6300978111"
 
-in_app_updates:
-  enabled: true
-  mode: "flexible" # "flexible" or "immediate"
+    # Route-specific ad placements.
+    route_placements:
+      home_collapsible_banner:
+        screen_scope: "route"
+        route: "/web/home"
+        format: "banner_collapsible"
+        position: "bottom"
+        ad_unit_id: "ca-app-pub-3940256099942544/6300978111"
 
-error_handling:
-  offline_page: "/native/offline"
-  error_page: "/native/error"
-  confirm_exit: true
+# -----------------------------------------------------------------------------
+# [APP LIFECYCLE & POLISH]
+# -----------------------------------------------------------------------------
+updates:
+  # In-app update mode. Options: "none", "flexible", "immediate"
+  in_app_updates: "flexible"
 
-routes:
-  - id: "web_home"
-    path: "/web/home"
-    kind: "webview"
-    label: "Home"
-    icon: "home"
-    url: "https://YOUR_PRIMARY_HOST_HERE"
-    webview_opts:
-      display_zoom_controls: true # Override global
+analytics_crash:
+  analytics: true
+  crashlytics: true
 
-  - id: "native_watchlist"
-    path: "/native/watchlist"
-    kind: "native"
-    label: "Watchlist"
-    icon: "star"
+notifications:
+  post_notifications_permission: true
+  fcm_enabled: false
 
-  - id: "native_portfolio"
-    path: "/native/portfolio"
-    kind: "native"
-    label: "Portfolio"
-    icon: "work"
-
-  - id: "native_alerts"
-    path: "/native/alerts"
-    kind: "native"
-    label: "Alerts"
-    icon: "notifications"
-
-  - id: "native_settings"
-    path: "/native/settings"
-    kind: "native"
-    label: "Settings"
-    icon: "settings"
+behavior_overrides:
+  back_button:
+    confirm_before_exit: true
