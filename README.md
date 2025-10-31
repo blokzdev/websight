@@ -35,7 +35,7 @@ This project is a **template**. To create a new app, you follow this workflow:
 
 ### 1. Create a New Project Copy
 
-Duplicate the entire `websight_starter` project folder to create a new, independent project for your app.
+Duplicate the entire `websight` project folder to create a new, independent project for your app.
 
 ```
 /my_apps/
@@ -43,39 +43,45 @@ Duplicate the entire `websight_starter` project folder to create a new, independ
   └── my_new_app/      <-- A fresh copy
 ```
 
-### 2. Configure Your App's Identity
+### 2. Rename the Project (Recommended)
 
-Open `my_new_app/android/app/build.gradle.kts` and change the `applicationId` to a unique package name for your app. This is critical for the Google Play Store.
+To ensure your project is properly organized and unique, you should update the Flutter package name and the native application ID. A simple find-and-replace is **not recommended** as it can break native project files.
 
-```kotlin
-// Before
-applicationId = "com.example.websight"
+The safest method is to use the `change_app_package_name` tool.
 
-// After
-applicationId = "com.mycompany.mynewapp"
+**a. Add the Tool:**
+Open your terminal at the root of your new project (`my_new_app/`) and run:
+```bash
+flutter pub add dev:change_app_package_name
 ```
+
+**b. Run the Tool:**
+Execute the following command, replacing `"com.mycompany.mynewapp"` with your desired package name. This will automatically update all necessary files in Android and iOS.
+```bash
+flutter pub run change_app_package_name:main com.mycompany.mynewapp
+```
+
+This command intelligently renames everything that needs to be changed, including the native application ID, `pubspec.yaml` name, and native folder structures.
 
 ### 3. Connect to Firebase
 
 Each app needs its own Firebase project for analytics and crash reporting.
 
-- Open your terminal at the root of the `my_new_app/` folder.
-- Run the FlutterFire CLI command:
+- In your terminal at the project root, run the FlutterFire CLI command:
   ```bash
   flutterfire configure
   ```
-- Follow the prompts to either create a new Firebase project or connect to an existing one.
-- The tool will automatically generate the required `lib/firebase_options.dart` and `android/app/google-services.json` files for you.
+- Follow the prompts to either create a new Firebase project or connect to an existing one. This will automatically generate the required `lib/firebase_options.dart` and `android/app/google-services.json` files.
 
 ### 4. Define Your App in `webview_config.yaml`
 
-This is where you bring your app to life. Open `my_new_app/assets/webview_config.yaml` and customize it:
+This is where you bring your app to life. Open `assets/webview_config.yaml` and customize it:
 
 - **`app`**: Set your `host` and `home_url`.
 - **`flutter_ui`**: Define your app's `theme` (colors, fonts) and `layout` (drawer, tabs, AppBar actions).
-- **`routes`**: Map out the navigation, including both web pages and the native screens you want to include.
-- **`ads`**: Enable or disable ads and provide your AdMob `ad_unit_id` for each placement.
-- **Features**: Toggle features like `in_app_updates`, `js_bridge`, and `analytics_crash` by setting them to `true` or `false`.
+- **`routes`**: Map out the navigation for your app.
+- **`ads`**: Enable ads and provide your AdMob `ad_unit_id` for each placement.
+- **Features**: Toggle other features like `in_app_updates` and `js_bridge`.
 
 ### 5. Build and Release
 
@@ -86,7 +92,7 @@ Once configured, you are ready to build your production app.
   ```bash
   flutter build appbundle --release
   ```
-- The output is a standard Android App Bundle (`.aab`) ready to be uploaded to the Google Play Store.
+- The output is a standard Android App Bundle (`.aab`) ready for the Google Play Store.
 
 ---
 
@@ -99,4 +105,4 @@ Once configured, you are ready to build your production app.
 - **`lib/bridge/`**: The Flutter side of the JavaScript-to-native bridge.
 - **`lib/lifecycle/`**: Controllers for managing app lifecycle events like updates and analytics.
 - **`lib/native_screens/`**: Placeholder native Flutter screens.
-- **`android/app/src/main/kotlin/.../`**: Native Android (Kotlin) code for platform-specific features like the barcode scanner, downloads, and consent.
+- **`android/app/src/main/kotlin/.../`**: Native Android (Kotlin) code for platform-specific features.
