@@ -1,4 +1,4 @@
-package com.example.websight.platform
+package com.app.websight.platform
 
 import android.annotation.SuppressLint
 import android.app.Activity
@@ -10,7 +10,7 @@ import androidx.camera.core.ImageAnalysis
 import androidx.camera.core.Preview
 import androidx.camera.lifecycle.ProcessCameraProvider
 import androidx.core.content.ContextCompat
-import com.example.websight.R
+import com.app.websight.R
 import com.google.mlkit.vision.barcode.BarcodeScannerOptions
 import com.google.mlkit.vision.barcode.BarcodeScanning
 import com.google.mlkit.vision.barcode.common.Barcode

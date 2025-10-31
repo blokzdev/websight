@@ -1,4 +1,4 @@
-package com.example.websight
+package com.app.websight
 
 import android.app.Activity
 import android.app.DownloadManager
@@ -11,9 +11,9 @@ import android.os.Environment
 import android.provider.MediaStore
 import android.util.Base64
 import android.webkit.ValueCallback
-import com.example.websight.platform.ScannerActivity
-import com.example.websight.platform.UmpConsent
-import com.example.websight.platform.WebSightChromeClient
+import com.app.websight.platform.ScannerActivity
+import com.app.websight.platform.UmpConsent
+import com.app.websight.platform.WebSightChromeClient
 import io.flutter.embedding.android.FlutterActivity
 import io.flutter.embedding.engine.FlutterEngine
 import io.flutter.plugin.common.MethodChannel

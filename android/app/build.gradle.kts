@@ -1,18 +1,56 @@
-// ... existing gradle file content
+plugins {
+    id("com.android.application")
+    id("kotlin-android")
+    id("dev.flutter.flutter-gradle-plugin")
+    id("com.google.gms.google-services") // Add this for Firebase
+}
+
+def localProperties = new Properties()
+def localPropertiesFile = rootProject.file("local.properties")
+if (localPropertiesFile.exists()) {
+    localPropertiesFile.withReader("UTF-8") { reader ->
+        localProperties.load(reader)
+    }
+}
+
+def flutterVersionCode = localProperties.getProperty("flutter.versionCode")
+if (flutterVersionCode == null) {
+    flutterVersionCode = "1"
+}
+
+def flutterVersionName = localProperties.getProperty("flutter.versionName")
+if (flutterVersionName == null) {
+    flutterVersionName = "1.0"
+}
 
 android {
-    // ... existing android config
+    namespace = "com.app.websight"
+    compileSdk = 36 // Use a specific, modern version
 
-    // CRITICAL: You must configure this section to sign your app for production.
-    // 1. Generate a keystore file:
-    //    keytool -genkey -v -keystore my-upload-key.keystore -alias my-key-alias -keyalg RSA -keysize 2048 -validity 10000
-    // 2. Place the 'my-upload-key.keystore' file in the 'android/app' directory.
-    // 3. Create a file named 'key.properties' in the 'android' directory.
-    // 4. Add the following to 'key.properties' (and add 'key.properties' to your .gitignore):
-    //    storePassword=YOUR_STORE_PASSWORD
-    //    keyPassword=YOUR_KEY_PASSWORD
-    //    keyAlias=my-key-alias
-    //    storeFile=my-upload-key.keystore
+    compileOptions {
+        sourceCompatibility = JavaVersion.VERSION_17
+        targetCompatibility = JavaVersion.VERSION_17
+    }
+
+    kotlinOptions {
+        jvmTarget = "17"
+    }
+
+    sourceSets {
+        getByName("main") {
+            java.srcDirs("src/main/kotlin")
+        }
+    }
+
+    defaultConfig {
+        applicationId = "com.app.websight"
+        minSdk = flutter.minSdkVersion
+        targetSdk = 36
+        versionCode = flutterVersionCode.toInt()
+        versionName = flutterVersionName
+        multiDexEnabled = true
+    }
+
     signingConfigs {
         create("release") {
             val keyProperties = java.util.Properties()
@@ -30,16 +68,16 @@ android {
 
     buildTypes {
         release {
-            // Use the signing config for release builds.
             signingConfig = signingConfigs.getByName("release")
-            
-            // Enable R8 code shrinking and obfuscation.
             isMinifyEnabled = true
             isShrinkResources = true
-            
-            // The default ProGuard rules are usually sufficient for a Flutter app,
-            // but you can add custom rules in 'proguard-rules.pro' if needed.
             proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
         }
     }
 }
+
+flutter {
+    source = "../.."
+}
+
+dependencies {}

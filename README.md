@@ -93,7 +93,7 @@ This is the most important step to make your app unique for the Google Play Stor
 - **Open the file**: `android/app/build.gradle.kts`
 - **Find the `applicationId`**: Inside the `defaultConfig` block, you will find this line:
   ```kotlin
-  applicationId = "com.example.websight"
+  applicationId = "com.app.websight"
   ```
 - **Change it** to your own unique package name:
   ```kotlin

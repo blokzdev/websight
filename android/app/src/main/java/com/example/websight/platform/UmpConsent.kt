@@ -1,4 +1,4 @@
-package com.example.websight.platform
+package com.app.websight.platform
 
 import android.app.Activity
 import com.google.android.ump.ConsentInformation
