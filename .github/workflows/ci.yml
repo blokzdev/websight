@@ -35,14 +35,32 @@ jobs:
       - name: Install dependencies
         run: flutter pub get
 
-      - name: Verify formatting
-        run: dart format --set-exit-if-changed lib test
+      - name: Verify formatting (lib + test + tool)
+        run: dart format --set-exit-if-changed lib test tool
 
       - name: Static analysis
         run: flutter analyze
 
       - name: Run tests
         run: flutter test --coverage
+
+      - name: Outdated dependency report (advisory)
+        run: flutter pub outdated --no-dev-dependencies --no-dependency-overrides --color || true
+
+      - name: Manifest sanity check (deep-link host matches app.host)
+        shell: bash
+        run: |
+          set -e
+          host=$(grep -E '^\s+host:' assets/webview_config.yaml | head -1 | sed -E 's/.*"([^"]+)".*/\1/')
+          if [ -z "$host" ] || [ "$host" = "YOUR_PRIMARY_HOST_HERE" ]; then
+            echo "skipping: app.host is unset / placeholder ($host)"
+            exit 0
+          fi
+          if ! grep -q "android:host=\"$host\"" android/app/src/main/AndroidManifest.xml; then
+            echo "::error file=android/app/src/main/AndroidManifest.xml::deep-link <data android:host> does not contain app.host=$host. Did you run dart run tool/configure.dart?"
+            exit 1
+          fi
+          echo "manifest deep-link host matches app.host ($host)."
 
       - name: Upload coverage
         if: always()

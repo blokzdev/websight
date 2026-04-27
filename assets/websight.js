@@ -103,6 +103,24 @@ class WebSightBridgeInternal {
     }
 
     /**
+     * Fire a host-side inbound event by name. The host's
+     * js_bridge.inbound_events YAML maps event names to host actions
+     * (`navigate:{route}`, `ui.toast:{message}`, etc.). Use this for
+     * page → host event hand-offs that don't expect a return value.
+     *
+     *   await WebSightBridge.dispatch('toast', { message: 'Saved!' });
+     *   await WebSightBridge.dispatch('openNative', { route: '/native/settings' });
+     *
+     * Note: navigation is allow-listed against `flutter_ui.routes` on
+     * the host side, so a `dispatch('openNative', { route: '/foo' })`
+     * targeting a route the integrator never declared is silently
+     * dropped.
+     */
+    dispatch(eventName, params) {
+        this._postMessage(String(eventName || ''), params || {});
+    }
+
+    /**
      * Hand a fully-qualified HTTP(S) URL to Android's DownloadManager.
      * Resolves with `{ id, filename }`. Use this for direct links to assets
      * the user should save to /Downloads (PDFs, images, archives, etc.).

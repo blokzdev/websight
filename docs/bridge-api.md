@@ -108,10 +108,11 @@ else navigates as normal.
 Opt out by setting `downloads.enabled: false` or
 `downloads.use_android_download_manager: false`.
 
-## Inbound events (native → JS)
+## Inbound events (page → host)
 
-Configure these in `js_bridge.inbound_events` and the host posts them
-back to `window` as `MessageEvent`-style invocations on the bridge.
+Configured in `js_bridge.inbound_events`. The host maps each event name
+to an `action:` template; the page invokes them via the public
+`dispatch(name, params)` method.
 
 ```yaml
 js_bridge:
@@ -124,12 +125,25 @@ js_bridge:
       action: "ui.toast:{message}"
 ```
 
-The `{key}` placeholders are substituted from the params the page passes
-when invoking the event:
+`{key}` placeholders in `action:` are substituted from the params the
+page passes:
 
 ```js
-WebSightBridge._postMessage('toast', { message: 'Saved!' });
+await WebSightBridge.dispatch('toast', { message: 'Saved!' });
+await WebSightBridge.dispatch('openNative', { route: '/native/settings' });
 ```
+
+### Built-in action grammars
+
+| Action prefix    | Effect on the host                                                                 |
+|------------------|-------------------------------------------------------------------------------------|
+| `navigate:`      | `context.go(<route>)`. The substituted route is allow-listed against `flutter_ui.routes` — pages cannot push the host into surfaces the integrator never declared. |
+| `ui.toast:`      | `ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(<message>)))`. |
+
+Action strings the host doesn't recognize are dropped with a debug log.
+The action grammar is intentionally narrow; if you need a richer
+inbound API, add a method (the `_dispatch` switch in `js_bridge.dart`),
+add it to `js_bridge.methods`, and document it above.
 
 ## Push notifications (FCM)
 
