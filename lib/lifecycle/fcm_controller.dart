@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/foundation.dart';
 
@@ -17,13 +19,18 @@ class FcmController extends ChangeNotifier {
   final List<RemoteMessage> _inbox = <RemoteMessage>[];
   String? _token;
   bool _initialized = false;
+  bool _disposed = false;
+
+  StreamSubscription<String>? _tokenSub;
+  StreamSubscription<RemoteMessage>? _foregroundSub;
+  StreamSubscription<RemoteMessage>? _openedSub;
 
   String? get token => _token;
   List<RemoteMessage> get inbox => List<RemoteMessage>.unmodifiable(_inbox);
   bool get initialized => _initialized;
 
   Future<void> initialize() async {
-    if (_initialized || !config.notifications.fcmEnabled) return;
+    if (_initialized || _disposed || !config.notifications.fcmEnabled) return;
     try {
       final messaging = FirebaseMessaging.instance;
       await messaging.requestPermission(
@@ -31,17 +38,20 @@ class FcmController extends ChangeNotifier {
         badge: true,
         sound: true,
       );
+      if (_disposed) return; // disposed mid-await
       _token = await messaging.getToken();
-      messaging.onTokenRefresh.listen((t) {
+
+      _tokenSub = messaging.onTokenRefresh.listen((t) {
+        if (_disposed) return;
         _token = t;
         notifyListeners();
       });
-
-      FirebaseMessaging.onMessage.listen(_onForegroundMessage);
-      FirebaseMessaging.onMessageOpenedApp.listen(_onMessageOpenedApp);
+      _foregroundSub = FirebaseMessaging.onMessage.listen(_onForegroundMessage);
+      _openedSub = FirebaseMessaging.onMessageOpenedApp.listen(_onMessageOpenedApp);
 
       // Cold-start: handle a message that launched the app.
       final initial = await messaging.getInitialMessage();
+      if (_disposed) return;
       if (initial != null) _inbox.add(initial);
       _initialized = true;
       notifyListeners();
@@ -51,12 +61,26 @@ class FcmController extends ChangeNotifier {
   }
 
   void _onForegroundMessage(RemoteMessage msg) {
+    if (_disposed) return;
     _inbox.add(msg);
     notifyListeners();
   }
 
   void _onMessageOpenedApp(RemoteMessage msg) {
+    if (_disposed) return;
     _inbox.add(msg);
     notifyListeners();
+  }
+
+  @override
+  void dispose() {
+    _disposed = true;
+    _tokenSub?.cancel();
+    _foregroundSub?.cancel();
+    _openedSub?.cancel();
+    _tokenSub = null;
+    _foregroundSub = null;
+    _openedSub = null;
+    super.dispose();
   }
 }

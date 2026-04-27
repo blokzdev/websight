@@ -43,6 +43,8 @@ class WebsightWebViewController extends ChangeNotifier {
   int _loadingProgress = 0;
   int get loadingProgress => _loadingProgress;
 
+  bool _disposed = false;
+
   void _initialize() {
     controller = WebViewController()
       ..setJavaScriptMode(config.webviewSettings.javascriptEnabled
@@ -165,15 +167,20 @@ class WebsightWebViewController extends ChangeNotifier {
   }
 
   Future<void> _injectUserScripts(String url) async {
+    if (_disposed) return;
     final scripts = features.userScripts;
     if (scripts.injectCssAsset != null) {
+      if (_disposed) return;
       await _injectCss(scripts.injectCssAsset!);
     }
     if (scripts.injectJsAsset != null) {
+      if (_disposed) return;
       await _injectJs(scripts.injectJsAsset!);
     }
+    if (_disposed) return;
     if (config.jsBridge.enabled && _isBridgeAllowed(url)) {
       await _jsBridge.inject();
+      if (_disposed) return;
       await _maybeInstallDownloadInterceptor();
     }
   }
@@ -289,7 +296,16 @@ class WebsightWebViewController extends ChangeNotifier {
     }
   }
 
-  Future<void> reload() => controller.reload();
+  Future<void> reload() {
+    if (_disposed) return Future<void>.value();
+    return controller.reload();
+  }
+
+  @override
+  void dispose() {
+    _disposed = true;
+    super.dispose();
+  }
 
   /// Loads the bundled offline page as an HTML data URI. Avoids `file://` so
   /// strict mixed-content policy and our security delegate stay engaged.

@@ -30,12 +30,20 @@ class AppShell extends StatefulWidget {
 }
 
 class _AppShellState extends State<AppShell> {
+  /// Last route we asked the ads controller to load. We avoid retrigging
+  /// `loadAdForRoute` on every rotation / theme change / MediaQuery
+  /// re-emit — only on actual route transitions.
+  String? _lastAdRoute;
+
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
     final ads = context.watch<AdsController>();
     final location = GoRouterState.of(context).uri.toString();
-    ads.loadAdForRoute(location, context: context);
+    if (_lastAdRoute != location) {
+      _lastAdRoute = location;
+      ads.loadAdForRoute(location, context: context);
+    }
   }
 
   RouteConfig? _currentRoute(BuildContext context) {
