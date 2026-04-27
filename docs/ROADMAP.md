@@ -97,12 +97,20 @@ The list below is what is actually in the repo and what is next.
 - GitHub Actions workflow runs format check, `flutter analyze`,
   `flutter test --coverage`, and a debug Android build on every PR.
 
+### ✅ Native screens (landed)
+
+- Replaced four hardcoded native screen stubs (which shipped with mock
+  data: `$12,345.67`, fabricated ticker rows, unwired settings toggles)
+  with `ConfigurableNativeScreen`. Settings variant reads
+  `WebSightConfig` / `WebSightFeatures` via Provider and shows the real
+  app identity, theme, analytics flags, FCM token, and IAP product
+  count. Privacy / Terms / About routes are surfaced automatically when
+  present in the route table. Other `/native/*` routes render a clearly
+  labeled placeholder with the route path so it's obvious where to plug
+  in real screens.
+
 ### 🟡 Remaining for v1
 
-- **Native screens (`lib/native_screens/*.dart`)**: still UI-only stubs.
-  v1 ships them as such — they are intended to be customized per integrator.
-  We will add an example "ConfigurableNativeScreen" that consumes Provider
-  before tagging v1.0.
 - **Server-side IAP receipt validation reference**: not in scope for v1.
   Documented as integrator responsibility; receipts arrive in
   `BillingController.purchases`.

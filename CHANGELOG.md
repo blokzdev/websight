@@ -7,6 +7,12 @@ follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 ## [Unreleased]
 
 ### Added
+- `ConfigurableNativeScreen` — single widget rendering every `kind: native`
+  route. Settings variant auto-derives content from `WebSightConfig` /
+  `WebSightFeatures` (app name, host, theme, analytics flags, FCM token,
+  IAP product count) and surfaces Privacy/Terms/About routes from the
+  config when present. Generic placeholder variant clearly labels the
+  route path so it's obvious the screen needs customization.
 - Hand-rolled feature config layer (`lib/config/feature_configs.dart`)
   covering splash, offline HTML fallback, custom CSS/JS injection,
   user agent modes, file uploads, downloads, billing, rating prompt,
@@ -68,6 +74,9 @@ follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 - `GEMINI.md` (37KB AI-agent prompt unrelated to product).
 - `webview_config.yaml.bak` and `webview_config.yaml.example` (the latter
   was identical to the live demo config).
+- `lib/native_screens/{watchlist,portfolio,alerts,settings}_screen.dart` —
+  hardcoded mock data ($12,345.67 portfolio balance, fabricated tickers,
+  unwired settings toggles). Replaced by `ConfigurableNativeScreen`.
 
 ### Security
 - Sanitized `google-services.json` — removed leaked `com.app.blokz` and

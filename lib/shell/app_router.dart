@@ -5,10 +5,7 @@ import 'package:go_router/go_router.dart';
 import 'package:websight/config/feature_configs.dart';
 import 'package:websight/config/webview_config.dart';
 import 'package:websight/lifecycle/analytics_controller.dart';
-import 'package:websight/native_screens/alerts_screen.dart';
-import 'package:websight/native_screens/portfolio_screen.dart';
-import 'package:websight/native_screens/settings_screen.dart';
-import 'package:websight/native_screens/watchlist_screen.dart';
+import 'package:websight/native_screens/configurable_native_screen.dart';
 import 'package:websight/shell/app_shell.dart';
 import 'package:websight/webview/webview_screen.dart';
 
@@ -114,23 +111,6 @@ class AppRouter {
       );
       return WebViewScreen(initialUrl: url, routeConfig: r);
     }
-    return _nativeScreen(r.path);
-  }
-
-  Widget _nativeScreen(String path) {
-    switch (path) {
-      case '/native/watchlist':
-        return const WatchlistScreen();
-      case '/native/portfolio':
-        return const PortfolioScreen();
-      case '/native/alerts':
-        return const AlertsScreen();
-      case '/native/settings':
-        return const SettingsScreen();
-      default:
-        return const Scaffold(
-          body: Center(child: Text('Unknown Native Screen')),
-        );
-    }
+    return ConfigurableNativeScreen(route: r);
   }
 }
