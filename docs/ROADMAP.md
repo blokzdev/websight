@@ -109,16 +109,22 @@ The list below is what is actually in the repo and what is next.
   labeled placeholder with the route path so it's obvious where to plug
   in real screens.
 
+### ✅ HTTPS download auto-detection (landed)
+
+- `WebSightBridge.registerHttpDownload(url, opts?)` exposes
+  `MainActivity.registerHttpDownload` (DownloadManager) to JS.
+- `_installDownloadInterceptor()` runs on every page-finish (idempotent
+  per page) when `downloads.enabled` and
+  `downloads.use_android_download_manager` are both true. It catches
+  clicks on `<a download>` and on links whose href ends in a
+  downloadable extension, routes HTTP/S to `registerHttpDownload` and
+  blob: to `downloadBlob`. Modifier-clicks are left to the browser.
+
 ### 🟡 Remaining for v1
 
 - **Server-side IAP receipt validation reference**: not in scope for v1.
   Documented as integrator responsibility; receipts arrive in
   `BillingController.purchases`.
-- **HTTPS DownloadListener**: today the Dart layer can call
-  `registerHttpDownload` over the method channel, but the WebView itself
-  doesn't auto-detect download links. Workaround: the integrator's web
-  page calls `WebSightBridge.downloadBlob(...)`; full auto-detection is a
-  v1.1 item (it requires a fork or a DOM content script).
 - **Configurable splash drawable**: today's splash is a centered
   `CircularProgressIndicator`; v1.x will support a configurable image.
 - **Honest README rewrite**: capture the new state, drop the overclaims.

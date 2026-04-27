@@ -70,6 +70,26 @@ void main() {
     });
   });
 
+  group('DownloadsFeature', () {
+    test('all flags default-on when section missing', () {
+      final d = DownloadsFeature.fromMap(null);
+      expect(d.enabled, isTrue);
+      expect(d.useDownloadManager, isTrue);
+      expect(d.supportBlobUrls, isTrue);
+    });
+
+    test('honors explicit opt-out flags', () {
+      final d = DownloadsFeature.fromMap({
+        'enabled': false,
+        'use_android_download_manager': false,
+        'support_blob_urls': false,
+      });
+      expect(d.enabled, isFalse);
+      expect(d.useDownloadManager, isFalse);
+      expect(d.supportBlobUrls, isFalse);
+    });
+  });
+
   group('BillingFeature', () {
     test('disabled and empty by default', () {
       final b = BillingFeature.fromMap(null);

@@ -199,6 +199,24 @@ class JsBridge {
           }
           break;
 
+        case 'registerHttpDownload':
+          final url = (params['url'] as String?) ?? '';
+          if (url.isEmpty || Uri.tryParse(url) == null) {
+            await _rejectCallback(callbackId, BridgeErrorCodes.args, 'Invalid URL');
+            return;
+          }
+          final result = await _platform.invokeMethod<Object?>(
+            'registerHttpDownload',
+            {
+              'url': url,
+              'userAgent': params['userAgent'],
+              'contentDisposition': params['contentDisposition'],
+              'mimeType': params['mimeType'],
+            },
+          );
+          await _resolveCallback(callbackId, result);
+          break;
+
         default:
           await _rejectCallback(callbackId, BridgeErrorCodes.unsupported, 'Unknown method "$method"');
       }

@@ -72,6 +72,42 @@ await WebSightBridge.downloadBlob(url, 'export.csv', 'text/csv');
 Opens `url` in Chrome Custom Tabs / the system browser. Use for off-host
 links you don't want to navigate inside the WebView.
 
+### `registerHttpDownload(url, opts?)` → `{ id, filename }`
+
+Hands a fully-qualified `http(s):` URL to Android's `DownloadManager`.
+Resolves with the system download id and the filename DownloadManager
+chose. `opts` is `{ userAgent?, contentDisposition?, mimeType? }` — all
+optional; sensible defaults (`navigator.userAgent`, MIME guessed from
+extension) are filled in automatically.
+
+```js
+await WebSightBridge.registerHttpDownload(
+  'https://example.com/report.pdf',
+  { contentDisposition: 'attachment; filename="quarterly.pdf"' },
+);
+```
+
+You usually don't need to call this directly — see auto-detect below.
+
+## Auto-detect
+
+When `downloads.enabled` and `downloads.use_android_download_manager` are
+both true, the host calls `WebSightBridge._installDownloadInterceptor()`
+once per page load. After install, any click satisfying ALL of:
+
+- left mouse / primary tap (no Ctrl/Shift/Alt/Meta modifiers)
+- on (or inside) an `<a>` whose href is `blob:`, `http:`, or `https:`
+- with a `download` attribute OR an href ending in a downloadable
+  extension (`.pdf`, `.zip`, `.csv`, `.mp4`, `.apk`, `.epub`, etc.)
+
+…is intercepted: HTTP/S targets route to `registerHttpDownload`
+(DownloadManager — system tray notification, lands in `/Downloads`),
+blob targets route to `downloadBlob` (MediaStore.Downloads). Everything
+else navigates as normal.
+
+Opt out by setting `downloads.enabled: false` or
+`downloads.use_android_download_manager: false`.
+
 ## Inbound events (native → JS)
 
 Configure these in `js_bridge.inbound_events` and the host posts them

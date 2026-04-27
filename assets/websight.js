@@ -15,6 +15,16 @@
  *   await WebSightBridge.getDeviceInfo()                     -> object
  *   await WebSightBridge.downloadBlob(blobUrl, filename?, mimeType?) -> uri string
  *   await WebSightBridge.openExternal(url)                   -> true
+ *   await WebSightBridge.registerHttpDownload(url, opts?)    -> { id, filename }
+ *
+ * Auto-detect:
+ *   The host may call WebSightBridge._installDownloadInterceptor() once
+ *   (the controller does this automatically when downloads.enabled and
+ *   downloads.use_android_download_manager are both true). After install,
+ *   any click on an `<a download>` element, an `<a>` whose href ends in a
+ *   common downloadable extension, or a `blob:` URL is intercepted: HTTP/S
+ *   targets are routed to registerHttpDownload (DownloadManager); blob
+ *   targets are routed through downloadBlob (MediaStore).
  *
  * Inbound (native -> JS) events the host may dispatch on `window`:
  *   onPush         CustomEvent({ detail: { title, body, data } })
@@ -92,6 +102,76 @@ class WebSightBridgeInternal {
         return this._withCallback('openExternal', { url: String(url || '') });
     }
 
+    /**
+     * Hand a fully-qualified HTTP(S) URL to Android's DownloadManager.
+     * Resolves with `{ id, filename }`. Use this for direct links to assets
+     * the user should save to /Downloads (PDFs, images, archives, etc.).
+     */
+    registerHttpDownload(url, opts) {
+        const o = opts || {};
+        return this._withCallback('registerHttpDownload', {
+            url: String(url || ''),
+            userAgent: o.userAgent || navigator.userAgent || null,
+            contentDisposition: o.contentDisposition || null,
+            mimeType: o.mimeType || null,
+        });
+    }
+
+    /**
+     * Installs a one-time document-level click listener that auto-routes
+     * download-class navigations to native handlers. Idempotent.
+     */
+    _installDownloadInterceptor() {
+        if (this._downloadInterceptorInstalled) return;
+        this._downloadInterceptorInstalled = true;
+
+        const DOWNLOAD_EXT = /\.(pdf|zip|tar|gz|7z|rar|csv|xls[xm]?|doc[xm]?|ppt[xm]?|odt|ods|odp|rtf|txt|epub|mobi|mp3|m4a|wav|flac|ogg|mp4|m4v|mov|avi|mkv|webm|apk|dmg|exe|iso|img)(\?|#|$)/i;
+
+        const findAnchor = (node) => {
+            while (node && node.nodeType === 1) {
+                if (node.tagName === 'A') return node;
+                node = node.parentNode;
+            }
+            return null;
+        };
+
+        document.addEventListener('click', (event) => {
+            // Honor user intent: ignore modifier-clicks the browser would
+            // normally treat as "open in new tab/window".
+            if (event.defaultPrevented || event.button !== 0 ||
+                event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) {
+                return;
+            }
+            const a = findAnchor(event.target);
+            if (!a || !a.href) return;
+
+            const href = a.href;
+            const hasDownloadAttr = a.hasAttribute('download');
+            const looksDownloadable = DOWNLOAD_EXT.test(href);
+            if (!hasDownloadAttr && !looksDownloadable) return;
+
+            const filename = (a.getAttribute('download') || '').trim() ||
+                _basenameFromUrl(href);
+
+            if (href.indexOf('blob:') === 0) {
+                event.preventDefault();
+                this.downloadBlob(href, filename).catch((err) => {
+                    console.warn('WebSightBridge: downloadBlob failed', err);
+                });
+                return;
+            }
+
+            if (/^https?:/i.test(href)) {
+                event.preventDefault();
+                this.registerHttpDownload(href, {
+                    contentDisposition: filename ? `attachment; filename="${filename}"` : null,
+                }).catch((err) => {
+                    console.warn('WebSightBridge: registerHttpDownload failed', err);
+                });
+            }
+        }, true);
+    }
+
     // --- Internal callback handling (called from Dart) ---
 
     resolveCallback(callbackId, result) {
@@ -127,5 +207,15 @@ class WebSightBridgeInternal {
             reader.onerror = () => reject(reader.error || new Error('FileReader error'));
             reader.readAsDataURL(blob);
         });
+    }
+}
+
+function _basenameFromUrl(href) {
+    try {
+        const u = new URL(href, document.baseURI || window.location.href);
+        const last = u.pathname.split('/').filter(Boolean).pop() || '';
+        return decodeURIComponent(last);
+    } catch (e) {
+        return '';
     }
 }

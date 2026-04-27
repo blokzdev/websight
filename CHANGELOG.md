@@ -7,6 +7,18 @@ follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 ## [Unreleased]
 
 ### Added
+- HTTPS download auto-detection. When `downloads.enabled` and
+  `downloads.use_android_download_manager` are both true, a small
+  document-level click listener installed by the bridge intercepts
+  clicks on `<a download>` elements and `<a>` elements whose href looks
+  downloadable (pdf/zip/csv/mp4/apk/...): HTTP/S targets are routed to
+  Android's DownloadManager via the new `registerHttpDownload` bridge
+  method; blob targets continue through `downloadBlob` to MediaStore.
+  Modifier-clicks (Ctrl/Shift/Alt/Meta) are left alone so the page's
+  own "open in new tab" semantics still work.
+- New `WebSightBridge.registerHttpDownload(url, opts?)` JS method
+  resolves with `{ id, filename }`. Documented in
+  `docs/bridge-api.md`.
 - `ConfigurableNativeScreen` — single widget rendering every `kind: native`
   route. Settings variant auto-derives content from `WebSightConfig` /
   `WebSightFeatures` (app name, host, theme, analytics flags, FCM token,

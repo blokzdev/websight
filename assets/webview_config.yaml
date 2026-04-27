@@ -143,6 +143,7 @@ js_bridge:
     - "getDeviceInfo()"
     - "downloadBlob(url, filename?)"
     - "openExternal(url)"
+    - "registerHttpDownload(url, opts?)"
 
   # Inbound events (JS dispatching to native).
   inbound_events:

@@ -147,6 +147,28 @@ class WebsightWebViewController extends ChangeNotifier {
     }
     if (config.jsBridge.enabled && _isBridgeAllowed(url)) {
       await _jsBridge.inject();
+      await _maybeInstallDownloadInterceptor();
+    }
+  }
+
+  /// Wires a small JS click-listener that auto-routes downloadable links to
+  /// the native handlers. We install once per page-finish (the helper itself
+  /// is idempotent within a page). Gated by config so integrators who manage
+  /// downloads themselves can opt out.
+  Future<void> _maybeInstallDownloadInterceptor() async {
+    if (!features.downloads.enabled || !features.downloads.useDownloadManager) {
+      return;
+    }
+    final name = jsonEncode(config.jsBridge.name);
+    try {
+      await controller.runJavaScript(
+        'if (window[$name] && typeof window[$name]._installDownloadInterceptor === "function") '
+        '{ window[$name]._installDownloadInterceptor(); }',
+      );
+    } catch (e) {
+      if (kDebugMode) {
+        debugPrint('Failed to install download interceptor: $e');
+      }
     }
   }
 

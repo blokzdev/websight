@@ -142,6 +142,7 @@ webview_config:
       - "getDeviceInfo()"
       - "downloadBlob(url, filename?)"
       - "openExternal(url)"
+      - "registerHttpDownload(url, opts?)"
     secure_origin_only: true
     inbound_events:
       - event: "openNative"
