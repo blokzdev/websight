@@ -1,18 +1,22 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:websight/config/webview_config.dart';
-import 'package:websight/webview/webview_controller.dart' as wc;
 import 'package:webview_flutter/webview_flutter.dart';
 
-class WebViewScreen extends StatefulWidget {
-  final String initialUrl;
-  final RouteConfig routeConfig;
+import 'package:websight/config/feature_configs.dart';
+import 'package:websight/config/webview_config.dart';
+import 'package:websight/webview/webview_controller.dart' as wc;
 
+class WebViewScreen extends StatefulWidget {
   const WebViewScreen({
     super.key,
     required this.initialUrl,
     required this.routeConfig,
   });
+
+  final String initialUrl;
+  final RouteConfig routeConfig;
 
   @override
   State<WebViewScreen> createState() => _WebViewScreenState();
@@ -21,89 +25,70 @@ class WebViewScreen extends StatefulWidget {
 class _WebViewScreenState extends State<WebViewScreen> {
   late final wc.WebsightWebViewController _websightController;
   late final WebSightConfig _config;
+  late final WebSightFeatures _features;
+
+  bool _showSplash = false;
+  Timer? _splashTimer;
 
   @override
   void initState() {
     super.initState();
     _config = context.read<WebSightConfig>();
+    _features = context.read<WebSightFeatures>();
     _websightController = wc.WebsightWebViewController(
       config: _config,
+      features: _features,
       routeConfig: widget.routeConfig,
       context: context,
     );
     _websightController.controller.loadRequest(Uri.parse(widget.initialUrl));
+
+    if (_features.splash.enabled) {
+      _showSplash = true;
+      _splashTimer = Timer(
+        Duration(milliseconds: _features.splash.timeoutMs),
+        () {
+          if (!mounted) return;
+          setState(() => _showSplash = false);
+        },
+      );
+    }
   }
 
   @override
   void dispose() {
+    _splashTimer?.cancel();
     _websightController.dispose();
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
-    // Using PopScope with the non-deprecated onPopInvokedWithResult.
     return PopScope(
-      canPop: false, // We will manage all pop events manually.
-      onPopInvokedWithResult: (bool didPop, dynamic result) async {
-        if (didPop) return;
-
-        // Capture the navigator BEFORE the async gap.
-        final navigator = Navigator.of(context);
-        final bool canWebViewGoBack =
-            await _websightController.controller.canGoBack();
-
-        if (canWebViewGoBack) {
-          _websightController.controller.goBack();
-        } else {
-          final bool confirmExit =
-              _config.behaviorOverrides.backButton.confirmBeforeExit;
-
-          if (confirmExit) {
-            // To satisfy the linter, we check `context.mounted` before the async gap.
-            if (!context.mounted) return;
-
-            final bool? shouldPop = await showDialog<bool>(
-              context: context,
-              builder: (dialogContext) => AlertDialog(
-                title: const Text('Confirm Exit'),
-                content: const Text('Are you sure you want to exit the app?'),
-                actions: <Widget>[
-                  TextButton(
-                    onPressed: () => Navigator.of(dialogContext).pop(false),
-                    child: const Text('Cancel'),
-                  ),
-                  TextButton(
-                    onPressed: () => Navigator.of(dialogContext).pop(true),
-                    child: const Text('Exit'),
-                  ),
-                ],
-              ),
-            );
-
-            if (shouldPop ?? false) {
-              navigator.pop();
-            }
-          } else {
-            navigator.pop();
-          }
-        }
-      },
-      child: ChangeNotifierProvider.value(
+      canPop: false,
+      onPopInvokedWithResult: _handlePop,
+      child: ChangeNotifierProvider<wc.WebsightWebViewController>.value(
         value: _websightController,
         child: Consumer<wc.WebsightWebViewController>(
-          builder: (context, controller, child) {
+          builder: (context, controller, _) {
+            final showOffline = controller.isOffline &&
+                _features.errorPages.showOfflinePage;
+            final showError = controller.webError != null && !controller.isOffline;
+
             return RefreshIndicator(
-              onRefresh: () => controller.reload(),
-              notificationPredicate: (notification) {
-                return widget.routeConfig.pullToRefresh;
-              },
+              onRefresh: controller.reload,
+              notificationPredicate: (_) => widget.routeConfig.pullToRefresh,
               child: Stack(
                 children: [
                   WebViewWidget(controller: controller.controller),
-                  if (controller.isLoading) const LinearProgressIndicator(),
-                  if (controller.webError != null)
-                    _buildErrorScreen(controller),
+                  if (controller.isLoading)
+                    const Align(
+                      alignment: Alignment.topCenter,
+                      child: LinearProgressIndicator(minHeight: 2),
+                    ),
+                  if (showOffline) _OfflineOverlay(features: _features, controller: controller),
+                  if (showError) _ErrorOverlay(controller: controller, features: _features),
+                  if (_showSplash) const _SplashOverlay(),
                 ],
               ),
             );
@@ -113,32 +98,135 @@ class _WebViewScreenState extends State<WebViewScreen> {
     );
   }
 
-  Widget _buildErrorScreen(wc.WebsightWebViewController controller) {
+  Future<void> _handlePop(bool didPop, dynamic _) async {
+    if (didPop) return;
+    final navigator = Navigator.of(context);
+    final canBack = await _websightController.controller.canGoBack();
+    if (canBack) {
+      await _websightController.controller.goBack();
+      return;
+    }
+    final confirmExit = _config.behaviorOverrides.backButton.confirmBeforeExit;
+    if (!confirmExit) {
+      navigator.pop();
+      return;
+    }
+    if (!context.mounted) return;
+    final result = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: const Text('Confirm Exit'),
+        content: const Text('Are you sure you want to exit the app?'),
+        actions: <Widget>[
+          TextButton(
+            onPressed: () => Navigator.of(dialogContext).pop(false),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.of(dialogContext).pop(true),
+            child: const Text('Exit'),
+          ),
+        ],
+      ),
+    );
+    if (result ?? false) navigator.pop();
+  }
+}
+
+class _SplashOverlay extends StatelessWidget {
+  const _SplashOverlay();
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
     return Container(
-      color: Theme.of(context).scaffoldBackgroundColor,
+      color: theme.colorScheme.surface,
+      child: Center(
+        child: CircularProgressIndicator(color: theme.colorScheme.primary),
+      ),
+    );
+  }
+}
+
+class _OfflineOverlay extends StatelessWidget {
+  const _OfflineOverlay({required this.features, required this.controller});
+
+  final WebSightFeatures features;
+  final wc.WebsightWebViewController controller;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return Container(
+      color: theme.scaffoldBackgroundColor,
       child: Center(
         child: Padding(
-          padding: const EdgeInsets.all(16.0),
+          padding: const EdgeInsets.all(24),
           child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
+            mainAxisSize: MainAxisSize.min,
             children: [
-              const Icon(Icons.error_outline, color: Colors.red, size: 60),
-              const SizedBox(height: 20),
+              Icon(Icons.wifi_off_rounded,
+                  color: theme.colorScheme.error, size: 56),
+              const SizedBox(height: 16),
               Text(
-                'Page Load Error',
-                style: Theme.of(context).textTheme.headlineSmall,
+                "You're offline",
+                style: theme.textTheme.titleLarge,
               ),
-              const SizedBox(height: 10),
+              const SizedBox(height: 8),
               Text(
-                'Could not load the page. Error: ${controller.webError?.description ?? 'Unknown Error'}',
+                'Check your connection and try again.',
                 textAlign: TextAlign.center,
+                style: theme.textTheme.bodyMedium,
               ),
-              const SizedBox(height: 30),
-              ElevatedButton.icon(
-                icon: const Icon(Icons.refresh),
-                label: const Text('Retry'),
-                onPressed: () => controller.reload(),
+              const SizedBox(height: 24),
+              if (features.errorPages.retryButton)
+                FilledButton.icon(
+                  onPressed: controller.reload,
+                  icon: const Icon(Icons.refresh),
+                  label: const Text('Retry'),
+                ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _ErrorOverlay extends StatelessWidget {
+  const _ErrorOverlay({required this.controller, required this.features});
+
+  final wc.WebsightWebViewController controller;
+  final WebSightFeatures features;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final desc = controller.webError?.description ?? 'Unknown error';
+    return Container(
+      color: theme.scaffoldBackgroundColor,
+      child: Center(
+        child: Padding(
+          padding: const EdgeInsets.all(24),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(Icons.error_outline,
+                  color: theme.colorScheme.error, size: 56),
+              const SizedBox(height: 16),
+              Text(
+                'Page failed to load',
+                style: theme.textTheme.titleLarge,
               ),
+              const SizedBox(height: 8),
+              Text(desc, textAlign: TextAlign.center),
+              const SizedBox(height: 24),
+              if (features.errorPages.retryButton)
+                FilledButton.icon(
+                  onPressed: controller.reload,
+                  icon: const Icon(Icons.refresh),
+                  label: const Text('Retry'),
+                ),
             ],
           ),
         ),
