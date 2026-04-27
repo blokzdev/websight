@@ -21,6 +21,8 @@ import io.flutter.plugin.common.MethodChannel
 import io.flutter.plugins.GeneratedPluginRegistrant
 import java.io.File
 import java.io.FileOutputStream
+import java.util.concurrent.ExecutorService
+import java.util.concurrent.Executors
 
 class MainActivity : FlutterActivity() {
 
@@ -29,18 +31,33 @@ class MainActivity : FlutterActivity() {
         private const val SCANNER_REQUEST_CODE = 2001
         private const val FILE_CHOOSER_REQUEST_CODE = 2002
         private const val TAG = "WebSightMainActivity"
+        // Refuses blobs decoded larger than this. Web pages can request
+        // arbitrarily-large blobs; 50 MiB is generous for the kinds of
+        // documents a typical WebView app would hand off.
+        private const val MAX_BLOB_BYTES = 50L * 1024 * 1024
     }
 
     private lateinit var umpConsent: UmpConsent
     private var pendingBarcodeResult: MethodChannel.Result? = null
     private var pendingFilePickResult: MethodChannel.Result? = null
 
+    /** Dedicated worker for blob/disk IO so we never block the UI thread. */
+    private lateinit var ioExecutor: ExecutorService
+
     override fun configureFlutterEngine(flutterEngine: FlutterEngine) {
         GeneratedPluginRegistrant.registerWith(flutterEngine)
         umpConsent = UmpConsent(this)
+        ioExecutor = Executors.newSingleThreadExecutor()
 
         MethodChannel(flutterEngine.dartExecutor.binaryMessenger, CHANNEL)
             .setMethodCallHandler { call, result -> handleMethodCall(call.method, call.arguments, result) }
+    }
+
+    override fun onDestroy() {
+        super.onDestroy()
+        if (::ioExecutor.isInitialized) {
+            ioExecutor.shutdown()
+        }
     }
 
     private fun handleMethodCall(method: String, args: Any?, result: MethodChannel.Result) {
@@ -234,44 +251,88 @@ class MainActivity : FlutterActivity() {
             result.error("E_ARGS", "base64data and filename are required", null)
             return
         }
-        try {
-            val payload = base64data.substringAfter(",", base64data)
-            val bytes = Base64.decode(payload, Base64.DEFAULT)
-            val resolvedMime = mimeType?.takeIf { it.isNotBlank() }
-                ?: MimeTypeMap.getSingleton().getMimeTypeFromExtension(filename.substringAfterLast('.', ""))
-                ?: "application/octet-stream"
-
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-                val values = ContentValues().apply {
-                    put(MediaStore.Downloads.DISPLAY_NAME, filename)
-                    put(MediaStore.Downloads.MIME_TYPE, resolvedMime)
-                    put(MediaStore.Downloads.RELATIVE_PATH, Environment.DIRECTORY_DOWNLOADS)
-                    put(MediaStore.Downloads.IS_PENDING, 1)
+        // Bound the work to a worker thread; Base64.decode + MediaStore
+        // insert + file write all hit disk and easily span tens of MB.
+        ioExecutor.execute {
+            try {
+                val payload = base64data.substringAfter(",", base64data)
+                // Cheap upper bound on decoded size from the encoded length;
+                // refuse early instead of letting Base64.decode allocate.
+                if (payload.length.toLong() > MAX_BLOB_BYTES * 4 / 3 + 16) {
+                    runOnUiThread {
+                        result.error(
+                            "E_INTERNAL",
+                            "Blob exceeds ${MAX_BLOB_BYTES / (1024 * 1024)} MB cap",
+                            null,
+                        )
+                    }
+                    return@execute
                 }
-                val resolver = contentResolver
-                val uri = resolver.insert(MediaStore.Downloads.EXTERNAL_CONTENT_URI, values)
-                    ?: throw IllegalStateException("MediaStore returned null URI")
-                resolver.openOutputStream(uri)?.use { it.write(bytes) }
-                values.clear()
-                values.put(MediaStore.Downloads.IS_PENDING, 0)
-                resolver.update(uri, values, null, null)
-                result.success(uri.toString())
-            } else {
-                @Suppress("DEPRECATION")
-                val downloadsDir = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS)
-                if (!downloadsDir.exists()) downloadsDir.mkdirs()
-                val outFile = File(downloadsDir, filename)
-                FileOutputStream(outFile).use { it.write(bytes) }
+                val bytes = Base64.decode(payload, Base64.DEFAULT)
+                if (bytes.size.toLong() > MAX_BLOB_BYTES) {
+                    runOnUiThread {
+                        result.error(
+                            "E_INTERNAL",
+                            "Blob exceeds ${MAX_BLOB_BYTES / (1024 * 1024)} MB cap",
+                            null,
+                        )
+                    }
+                    return@execute
+                }
+                val resolvedMime = mimeType?.takeIf { it.isNotBlank() }
+                    ?: MimeTypeMap.getSingleton()
+                        .getMimeTypeFromExtension(filename.substringAfterLast('.', ""))
+                    ?: "application/octet-stream"
 
-                val dm = getSystemService(Context.DOWNLOAD_SERVICE) as DownloadManager
-                @Suppress("DEPRECATION")
-                dm.addCompletedDownload(filename, filename, true, resolvedMime, outFile.absolutePath, bytes.size.toLong(), true)
-                result.success(outFile.toURI().toString())
+                val savedUri = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+                    writeViaMediaStore(filename, resolvedMime, bytes)
+                } else {
+                    writeToLegacyDownloads(filename, resolvedMime, bytes)
+                }
+                runOnUiThread { result.success(savedUri) }
+            } catch (e: Exception) {
+                Log.e(TAG, "downloadBlob failed", e)
+                runOnUiThread {
+                    result.error("E_INTERNAL", e.message ?: "downloadBlob failed", null)
+                }
             }
-        } catch (e: Exception) {
-            Log.e(TAG, "downloadBlob failed", e)
-            result.error("E_INTERNAL", e.message, null)
         }
+    }
+
+    private fun writeViaMediaStore(filename: String, mime: String, bytes: ByteArray): String {
+        val resolver = contentResolver
+        val values = ContentValues().apply {
+            put(MediaStore.Downloads.DISPLAY_NAME, filename)
+            put(MediaStore.Downloads.MIME_TYPE, mime)
+            put(MediaStore.Downloads.RELATIVE_PATH, Environment.DIRECTORY_DOWNLOADS)
+            put(MediaStore.Downloads.IS_PENDING, 1)
+        }
+        val uri = resolver.insert(MediaStore.Downloads.EXTERNAL_CONTENT_URI, values)
+            ?: throw IllegalStateException("MediaStore returned null URI")
+        try {
+            resolver.openOutputStream(uri)?.use { it.write(bytes) }
+                ?: throw IllegalStateException("Could not open output stream for $uri")
+            val cleared = ContentValues().apply { put(MediaStore.Downloads.IS_PENDING, 0) }
+            resolver.update(uri, cleared, null, null)
+            return uri.toString()
+        } catch (e: Exception) {
+            // Roll back the pending row so it doesn't appear stuck in Downloads.
+            resolver.delete(uri, null, null)
+            throw e
+        }
+    }
+
+    @Suppress("DEPRECATION")
+    private fun writeToLegacyDownloads(filename: String, mime: String, bytes: ByteArray): String {
+        val downloadsDir = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS)
+        if (!downloadsDir.exists()) downloadsDir.mkdirs()
+        val outFile = File(downloadsDir, filename)
+        FileOutputStream(outFile).use { it.write(bytes) }
+        val dm = getSystemService(Context.DOWNLOAD_SERVICE) as DownloadManager
+        dm.addCompletedDownload(
+            filename, filename, true, mime, outFile.absolutePath, bytes.size.toLong(), true,
+        )
+        return outFile.toURI().toString()
     }
 
     // --- HTTPS downloads ---
