@@ -79,6 +79,13 @@ follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   unawaited_futures, always_use_package_imports, etc.
 
 ### Fixed
+- Adaptive banner ad height now reflects the live device orientation.
+  `AdsController._getAdSize` previously hard-coded `Orientation.portrait`
+  when calling `AdSize.getAnchoredAdaptiveBannerAdSize`, producing a
+  too-tall banner on landscape devices and after rotation. Now it reads
+  `MediaQuery.of(context).orientation`; `app_shell.dart`'s existing
+  `didChangeDependencies` hook reloads the banner on rotation so the
+  size updates automatically.
 - Gradle build broken on non-Windows machines: `settings.gradle.kts`
   hardcoded `C:/dev/flutter/...` path replaced with `local.properties`
   lookup.

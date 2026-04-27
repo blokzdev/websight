@@ -89,10 +89,10 @@ class AdsController extends ChangeNotifier {
     // The collapsible behavior is triggered by the 'extras' in the AdRequest.
     if (placement.format == 'banner_adaptive' ||
         placement.format == 'banner_collapsible') {
-      final width = MediaQuery.of(context).size.width.truncate();
+      final media = MediaQuery.of(context);
       return AdSize.getAnchoredAdaptiveBannerAdSize(
-        Orientation.portrait, // This can be made dynamic if needed
-        width,
+        media.orientation,
+        media.size.width.truncate(),
       );
     }
     // Fallback for any other format or as a default.
