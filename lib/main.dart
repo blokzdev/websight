@@ -16,6 +16,7 @@ import 'package:websight/lifecycle/permissions_controller.dart';
 import 'package:websight/lifecycle/rating_controller.dart';
 import 'package:websight/lifecycle/update_controller.dart';
 import 'package:websight/shell/app_router.dart';
+import 'package:websight/shell/webview_signals.dart';
 import 'package:websight/theme.dart';
 
 Future<void> main() async {
@@ -68,6 +69,7 @@ Future<void> main() async {
         ChangeNotifierProvider<AdsController>.value(value: ads),
         ChangeNotifierProvider<FcmController>.value(value: fcm),
         ChangeNotifierProvider<BillingController>.value(value: billing),
+        ChangeNotifierProvider<WebViewSignals>(create: (_) => WebViewSignals()),
       ],
       child: const WebSightApp(),
     ),

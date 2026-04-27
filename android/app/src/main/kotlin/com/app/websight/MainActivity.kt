@@ -13,7 +13,6 @@ import android.provider.MediaStore
 import android.util.Base64
 import android.util.Log
 import android.webkit.MimeTypeMap
-import android.webkit.ValueCallback
 import com.app.websight.platform.ScannerActivity
 import com.app.websight.platform.UmpConsent
 import io.flutter.embedding.android.FlutterActivity
@@ -34,7 +33,7 @@ class MainActivity : FlutterActivity() {
 
     private lateinit var umpConsent: UmpConsent
     private var pendingBarcodeResult: MethodChannel.Result? = null
-    private var pendingFileUploadCallback: ValueCallback<Array<Uri>>? = null
+    private var pendingFilePickResult: MethodChannel.Result? = null
 
     override fun configureFlutterEngine(flutterEngine: FlutterEngine) {
         GeneratedPluginRegistrant.registerWith(flutterEngine)
@@ -81,6 +80,21 @@ class MainActivity : FlutterActivity() {
                 )
             }
 
+            "pickFiles" -> {
+                @Suppress("UNCHECKED_CAST") val params = args as? Map<String, Any?>
+                if (params == null) {
+                    result.error("E_ARGS", "Expected map { mimeTypes, allowMultiple, captureCamera }", null)
+                    return
+                }
+                pickFiles(
+                    mimeTypes = (params["mimeTypes"] as? List<*>)
+                        ?.filterIsInstance<String>() ?: listOf("*/*"),
+                    allowMultiple = (params["allowMultiple"] as? Boolean) ?: false,
+                    captureCamera = (params["captureCamera"] as? Boolean) ?: false,
+                    result = result,
+                )
+            }
+
             else -> result.notImplemented()
         }
     }
@@ -97,27 +111,66 @@ class MainActivity : FlutterActivity() {
     }
 
     // --- File uploads ---
+    //
+    // Driven from Dart's WebsightWebViewController._onShowFileSelector. The
+    // Dart side hands us an allow-list of MIME types, whether multi-select is
+    // permitted, and whether camera capture should be offered alongside the
+    // file picker. We launch the system chooser, await the result, and send
+    // back a List<String> of content URIs — webview_flutter_android hands
+    // those URIs to the underlying WebView which the page then receives.
 
-    /**
-     * Called by the WebView's chrome client adapter when the page invokes `<input type="file">`.
-     * We launch the system chooser and route the result back via [onActivityResult].
-     */
-    fun launchFileChooser(callback: ValueCallback<Array<Uri>>?, intent: Intent): Boolean {
-        if (pendingFileUploadCallback != null) {
-            pendingFileUploadCallback?.onReceiveValue(null)
+    private fun pickFiles(
+        mimeTypes: List<String>,
+        allowMultiple: Boolean,
+        captureCamera: Boolean,
+        result: MethodChannel.Result,
+    ) {
+        if (pendingFilePickResult != null) {
+            // A previous picker is still open. Reject the new request rather
+            // than stomping on the in-flight callback.
+            result.error("E_BUSY", "A file picker is already open", null)
+            return
         }
-        pendingFileUploadCallback = callback
-        return try {
-            startActivityForResult(intent, FILE_CHOOSER_REQUEST_CODE)
-            true
+        pendingFilePickResult = result
+
+        val contentIntent = Intent(Intent.ACTION_GET_CONTENT).apply {
+            addCategory(Intent.CATEGORY_OPENABLE)
+            putExtra(Intent.EXTRA_ALLOW_MULTIPLE, allowMultiple)
+            type = if (mimeTypes.size == 1) mimeTypes.first() else "*/*"
+            if (mimeTypes.size > 1) {
+                putExtra(Intent.EXTRA_MIME_TYPES, mimeTypes.toTypedArray())
+            }
+        }
+
+        // Optionally let the user capture a new photo/video instead of picking.
+        val extraInitialIntents = if (captureCamera) {
+            buildList<Intent> {
+                if (mimeTypes.any { it.startsWith("image/") || it == "*/*" }) {
+                    add(Intent(MediaStore.ACTION_IMAGE_CAPTURE))
+                }
+                if (mimeTypes.any { it.startsWith("video/") || it == "*/*" }) {
+                    add(Intent(MediaStore.ACTION_VIDEO_CAPTURE))
+                }
+            }.toTypedArray()
+        } else {
+            emptyArray()
+        }
+
+        val chooser = Intent.createChooser(contentIntent, "Select file").apply {
+            if (extraInitialIntents.isNotEmpty()) {
+                putExtra(Intent.EXTRA_INITIAL_INTENTS, extraInitialIntents)
+            }
+        }
+
+        try {
+            startActivityForResult(chooser, FILE_CHOOSER_REQUEST_CODE)
         } catch (e: Exception) {
-            Log.w(TAG, "Failed to launch file chooser", e)
-            pendingFileUploadCallback = null
-            false
+            pendingFilePickResult = null
+            result.error("E_INTERNAL", "Failed to launch file chooser: ${e.message}", null)
         }
     }
 
-    @Deprecated("Deprecated in superclass, kept for WebChromeClient compatibility")
+    @Deprecated("Deprecated in superclass; routed via startActivityForResult")
     @Suppress("DEPRECATION")
     override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
         super.onActivityResult(requestCode, resultCode, data)
@@ -133,17 +186,36 @@ class MainActivity : FlutterActivity() {
                 }
             }
             FILE_CHOOSER_REQUEST_CODE -> {
-                val cb = pendingFileUploadCallback
-                pendingFileUploadCallback = null
-                if (cb == null) return
-                val uris = if (resultCode == Activity.RESULT_OK && data != null) {
-                    android.webkit.WebChromeClient.FileChooserParams.parseResult(resultCode, data)
-                } else {
-                    null
+                val r = pendingFilePickResult
+                pendingFilePickResult = null
+                if (r == null) return
+                if (resultCode != Activity.RESULT_OK) {
+                    r.success(emptyList<String>())
+                    return
                 }
-                cb.onReceiveValue(uris)
+                r.success(extractUris(data))
             }
         }
+    }
+
+    /**
+     * Extracts content URIs from the chooser result. Handles single-select
+     * (`data.data`), multi-select (`data.clipData`), and the camera-capture
+     * fallback where the camera intent returned no [Intent] but stored the
+     * image at the `MediaStore.EXTRA_OUTPUT` URI.
+     */
+    private fun extractUris(data: Intent?): List<String> {
+        if (data == null) return emptyList()
+        val uris = mutableListOf<Uri>()
+        val clip = data.clipData
+        if (clip != null) {
+            for (i in 0 until clip.itemCount) {
+                clip.getItemAt(i).uri?.let { uris.add(it) }
+            }
+        } else {
+            data.data?.let { uris.add(it) }
+        }
+        return uris.map { it.toString() }
     }
 
     // --- Blob downloads ---

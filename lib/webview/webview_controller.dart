@@ -88,23 +88,50 @@ class WebsightWebViewController extends ChangeNotifier {
     }
   }
 
+  static const MethodChannel _platformChannel =
+      MethodChannel('websight/method_channel');
+
   void _applyAndroidSpecifics() {
     if (controller.platform is AndroidWebViewController) {
       final android = controller.platform as AndroidWebViewController;
       AndroidWebViewController.enableDebugging(kDebugMode);
       android.setMediaPlaybackRequiresUserGesture(true);
-      // file uploads bridged through the platform-side WebSightChromeClient via
-      // the Android plugin's onShowFileSelector hook.
       unawaited(android.setOnShowFileSelector(_onShowFileSelector));
     }
   }
 
+  /// Hook the Android WebView plugin invokes when the page surfaces a
+  /// `<input type="file">`. We delegate the actual chooser to MainActivity's
+  /// `pickFiles` method-channel handler, which launches the system file
+  /// picker (and optionally camera capture), and returns the chosen URIs as
+  /// strings the plugin hands back to the WebView.
   Future<List<String>> _onShowFileSelector(FileSelectorParams params) async {
     if (!features.fileUploads.enabled) return const <String>[];
-    // The plugin will route the chooser dialog into MainActivity natively.
-    // Returning an empty list defers to MainActivity#launchFileChooser via
-    // WebSightChromeClient registered on the underlying WebView.
-    return const <String>[];
+    final allowMultiple =
+        params.mode == FileSelectorMode.openMultiple;
+    final acceptTypes = params.acceptTypes
+        .where((t) => t.isNotEmpty)
+        .toList(growable: false);
+    final mimeTypes = acceptTypes.isEmpty
+        ? features.fileUploads.mimeTypes
+        : acceptTypes;
+    try {
+      final result = await _platformChannel.invokeMethod<List<dynamic>>(
+        'pickFiles',
+        {
+          'mimeTypes': mimeTypes,
+          'allowMultiple': allowMultiple,
+          'captureCamera': features.fileUploads.captureCamera,
+        },
+      );
+      if (result == null) return const <String>[];
+      return result.whereType<String>().toList(growable: false);
+    } on PlatformException catch (e) {
+      if (kDebugMode) {
+        debugPrint('pickFiles failed: ${e.code} ${e.message}');
+      }
+      return const <String>[];
+    }
   }
 
   void _applyUserAgent() {

@@ -7,6 +7,7 @@ import 'package:websight/ads/ads_controller.dart';
 import 'package:websight/config/feature_configs.dart';
 import 'package:websight/config/webview_config.dart';
 import 'package:websight/shell/action_dispatcher.dart';
+import 'package:websight/shell/webview_signals.dart';
 import 'package:websight/utils/helpers.dart';
 
 /// The top-level scaffold around the routed `child`. All visual chrome —
@@ -63,11 +64,10 @@ class _AppShellState extends State<AppShell> {
     final route = _currentRoute(context);
     final appbarVisible = route?.appbarVisible ?? true;
     final ads = context.watch<AdsController>();
+    final signals = context.read<WebViewSignals>();
     final dispatcher = ActionDispatcher(
-      onWebviewReload: () {
-        // The webview screen also subscribes to a refresh trigger; an explicit
-        // hook is wired in webview_screen via a global key in v1.x.
-      },
+      onWebviewReload: signals.requestReload,
+      onWebviewBack: signals.requestBack,
     );
 
     return Scaffold(

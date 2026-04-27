@@ -6,6 +6,7 @@ import 'package:webview_flutter/webview_flutter.dart';
 
 import 'package:websight/config/feature_configs.dart';
 import 'package:websight/config/webview_config.dart';
+import 'package:websight/shell/webview_signals.dart';
 import 'package:websight/utils/helpers.dart';
 import 'package:websight/webview/webview_controller.dart' as wc;
 
@@ -27,6 +28,9 @@ class _WebViewScreenState extends State<WebViewScreen> {
   late final wc.WebsightWebViewController _websightController;
   late final WebSightConfig _config;
   late final WebSightFeatures _features;
+  WebViewSignals? _signals;
+  int _lastReloadTick = 0;
+  int _lastBackTick = 0;
 
   bool _showSplash = false;
   Timer? _splashTimer;
@@ -44,6 +48,11 @@ class _WebViewScreenState extends State<WebViewScreen> {
     );
     _websightController.controller.loadRequest(Uri.parse(widget.initialUrl));
 
+    _signals = context.read<WebViewSignals>();
+    _lastReloadTick = _signals!.reloadTick;
+    _lastBackTick = _signals!.backTick;
+    _signals!.addListener(_onSignal);
+
     if (_features.splash.enabled) {
       _showSplash = true;
       _splashTimer = Timer(
@@ -56,8 +65,26 @@ class _WebViewScreenState extends State<WebViewScreen> {
     }
   }
 
+  void _onSignal() {
+    final s = _signals;
+    if (s == null) return;
+    if (s.reloadTick != _lastReloadTick) {
+      _lastReloadTick = s.reloadTick;
+      _websightController.reload();
+    }
+    if (s.backTick != _lastBackTick) {
+      _lastBackTick = s.backTick;
+      _websightController.controller
+          .canGoBack()
+          .then((canBack) {
+        if (canBack) _websightController.controller.goBack();
+      });
+    }
+  }
+
   @override
   void dispose() {
+    _signals?.removeListener(_onSignal);
     _splashTimer?.cancel();
     _websightController.dispose();
     super.dispose();
