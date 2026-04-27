@@ -7,6 +7,25 @@ follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 ## [Unreleased]
 
 ### Added
+- `tool/configure.dart` — single command that propagates app identity
+  from `assets/webview_config.yaml` into the Android files that have to
+  host those values literally:
+  - `applicationId` + `namespace` in `android/app/build.gradle.kts`
+  - deep-link `<data android:host>` and AdMob `APPLICATION_ID`
+    meta-data in `AndroidManifest.xml`
+  - `<string name="app_name">` in `strings.xml`
+  - `name` (snake_case) and `version` in `pubspec.yaml`
+  - `security.restrict_to_hosts` and `navigation.deep_links.hosts`
+    propagated from `app.host` so the user only edits one host.
+  Runs idempotently, supports `--dry-run`, validates inputs (rejects
+  empty/malformed `application_id`, AdMob unit-ID-shaped values).
+  Logic lives in `tool/configure_lib.dart` and is unit-tested.
+- New optional `app:` keys: `application_id`, `admob_app_id`, `version`.
+  Backwards compatible — when absent, the corresponding files are left
+  untouched.
+- README "fork-the-template" workflow rewritten around the new
+  `dart run tool/configure.dart` step. Steps that hand-edited Gradle
+  and the manifest are gone.
 - Configurable in-Flutter splash overlay. New
   `splash.{image_asset, background_color, tagline, fade_out_ms}` keys
   drive `_SplashOverlay`: optional centered logo, optional tagline,

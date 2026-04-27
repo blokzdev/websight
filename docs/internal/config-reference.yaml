@@ -1,5 +1,8 @@
 webview_config:
   app:
+    # The display name for the app (status bar, launcher label).
+    name: "WebSight"
+
     # The primary domain your WebView should treat as first-party (host only; no scheme/path).
     # e.g. "example.com", "app.example.com", "localhost"
     host: "YOUR_PRIMARY_HOST_HERE"
@@ -7,6 +10,17 @@ webview_config:
     # The initial URL to load in the WebView (includes scheme and optional path/fragment).
     # e.g. "https://example.com/", "https://app.example.com/#/dashboard", "http://localhost:3000"
     home_url: "https://YOUR_PRIMARY_HOST_HERE/"
+
+    # Android applicationId. Reverse-DNS, lowercase. Used by `tool/configure.dart`
+    # to keep build.gradle.kts + manifest in sync with the YAML.
+    application_id: "com.yourcompany.yourapp"
+
+    # AdMob console App ID (the one with a "~"). NOT a Unit ID.
+    admob_app_id: "ca-app-pub-XXXXXXXXXX~YYYYYYYYYY"
+
+    # Optional version override propagated by `tool/configure.dart` into
+    # pubspec.yaml. Format: `<semver>+<build-number>`.
+    version: "1.0.0+1"
 
     orientation: "auto"          # auto | portrait | landscape
     debug_webview: true

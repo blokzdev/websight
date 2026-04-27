@@ -50,22 +50,59 @@ folder for each project.
 flutter pub get
 ```
 
-### 3. Set the application id (critical for Play Store)
+### 3. Edit identity in **one** place
 
-Edit `android/app/build.gradle.kts`:
+`assets/webview_config.yaml` is the single source of truth for app
+identity. Set the `app:` block:
 
-```kotlin
-applicationId = "com.yourcompany.yourapp"
+```yaml
+app:
+  name: "My Shop"
+  host: "shop.example.com"
+  home_url: "https://shop.example.com/"
+  application_id: "com.yourcompany.shop"
+  admob_app_id: "ca-app-pub-XXXXXXXXXX~YYYYYYYYYY"
+  version: "1.0.0+1"
 ```
 
-The `change_app_package_name` dev dependency can also rename the Kotlin
-package if you want full consistency:
+While you're here, set your routes, theme, allowlist, ads (`ads.placements.*.ad_unit_id`),
+FCM flags, splash, etc.
+
+### 4. Propagate identity to Android/Gradle/manifest/strings/pubspec
 
 ```bash
-dart run change_app_package_name:main com.yourcompany.yourapp
+dart run tool/configure.dart           # apply
+dart run tool/configure.dart --dry-run # preview without writing
 ```
 
-### 4. Wire Firebase
+The script keeps these files in sync with the YAML:
+
+- `android/app/build.gradle.kts` — `applicationId` + `namespace`
+- `android/app/src/main/AndroidManifest.xml` — deep-link
+  `<data android:host>` + AdMob `APPLICATION_ID` meta-data
+- `android/app/src/main/res/values/strings.xml` — `app_name`
+- `pubspec.yaml` — `name` (snake_case) + `version`
+- `assets/webview_config.yaml` — `security.restrict_to_hosts` +
+  `navigation.deep_links.hosts` propagated from `app.host` so you only
+  edit one host
+
+It is idempotent (re-run any time) and validates inputs (rejects empty
+`application_id`, malformed reverse-DNS, AdMob unit-ID-shaped values).
+
+### 5. (Optional) Move the Kotlin package directory to match
+
+The script writes `applicationId` and `namespace`, but does **not** move
+Kotlin source files. To rename the directory tree under
+`android/app/src/main/kotlin/com/...` to match your new
+`applicationId`, run:
+
+```bash
+dart run change_app_package_name:main com.yourcompany.shop
+```
+
+This is destructive (moves files); only run it once after step 3.
+
+### 6. Wire Firebase
 
 ```bash
 npm install -g firebase-tools         # if not already
@@ -76,19 +113,6 @@ flutterfire configure
 This regenerates `android/app/google-services.json` and
 `lib/firebase_options.dart` with your project's real values. The repo
 ships placeholder versions so the project builds out of the box.
-
-### 5. Edit `assets/webview_config.yaml`
-
-Set `app.host`, `app.home_url`, your routes, theme, allowlist, ads, FCM
-flags, and so on. Keep the host in `app.host`,
-`security.restrict_to_hosts`, and `navigation.deep_links.hosts` in sync.
-
-### 6. (Optional) Update deep-link host
-
-Edit `android/app/src/main/AndroidManifest.xml` — the `<intent-filter
-android:autoVerify="true">` block has a `YOUR_PRIMARY_HOST` placeholder.
-For full app links, host
-`https://your-host/.well-known/assetlinks.json`.
 
 ### 7. Set up signing for release
 
@@ -145,9 +169,15 @@ Output: `build/app/outputs/bundle/release/app-release.aab`.
 
 ## Project structure
 
-- `assets/webview_config.yaml` — single source of truth.
+- `assets/webview_config.yaml` — **single source of truth** for both
+  runtime (theme, routes, ads, FCM, splash, downloads, JS bridge,
+  security) and build-time identity (app name, host, applicationId,
+  AdMob App ID).
 - `assets/websight.js` — bridge helper injected into every page.
 - `assets/offline/index.html` — offline fallback page.
+- `tool/configure.dart` — propagates the identity values from the
+  YAML into Gradle, manifest, strings, pubspec. Re-run any time the
+  YAML changes; it is idempotent.
 - `lib/config/` — typed config models (`webview_config.dart`,
   `feature_configs.dart`).
 - `lib/shell/` — app shell, router, action dispatcher.

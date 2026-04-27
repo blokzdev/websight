@@ -17,6 +17,23 @@ app:
   # The full initial URL to load when the app starts.
   home_url: "https://flutter.dev/"
 
+  # Android applicationId (reverse-DNS, lowercase).
+  # When set, `dart run tool/configure.dart` writes this into
+  # android/app/build.gradle.kts (applicationId + namespace) and the manifest
+  # provider authority. Leave commented to keep the demo default.
+  # application_id: "com.yourcompany.yourapp"
+
+  # AdMob console App ID for this Android app.
+  # NOTE: this is the App ID (with a "~"), NOT the Ad Unit IDs (which contain
+  # a "/"). Unit IDs go under `ads.placements.*.ad_unit_id` below.
+  # When set, `dart run tool/configure.dart` writes it into the
+  # AndroidManifest.xml `com.google.android.gms.ads.APPLICATION_ID` meta-data.
+  # admob_app_id: "ca-app-pub-XXXXXXXXXX~YYYYYYYYYY"
+
+  # Optional pubspec version override. When set,
+  # `dart run tool/configure.dart` writes it into pubspec.yaml `version:`.
+  # version: "1.0.0+1"
+
 # -----------------------------------------------------------------------------
 # [FLUTTER UI/UX LAYER]
 # This section controls the native Flutter shell around your web content.
