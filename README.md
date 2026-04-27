@@ -65,8 +65,11 @@ app:
   version: "1.0.0+1"
 ```
 
-While you're here, set your routes, theme, allowlist, ads (`ads.placements.*.ad_unit_id`),
-FCM flags, splash, etc.
+While you're here, set your routes, theme, allowlist, AdMob banner unit
+ids (`ads.placements.*.ad_unit_id` — these are separate from the App ID
+in `app.admob_app_id` and are **not** touched by `tool/configure.dart`,
+since they come from the AdMob console, not from app identity), FCM
+flags, splash, etc.
 
 ### 4. Propagate identity to Android/Gradle/manifest/strings/pubspec
 
