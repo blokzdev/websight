@@ -65,6 +65,11 @@ Future<void> main() async {
       providers: [
         Provider<WebSightConfig>.value(value: config),
         Provider<WebSightFeatures>.value(value: features),
+        // AnalyticsController is intentionally a plain Provider — it holds no
+        // listeners, streams, or other resources that need disposal. The
+        // FirebaseAnalytics / Crashlytics SDKs themselves manage their own
+        // lifecycle. If we add per-instance state in the future (e.g. an opt-in
+        // flag stream), promote this to ChangeNotifierProvider.
         Provider<AnalyticsController>.value(value: analytics),
         ChangeNotifierProvider<AdsController>.value(value: ads),
         ChangeNotifierProvider<FcmController>.value(value: fcm),

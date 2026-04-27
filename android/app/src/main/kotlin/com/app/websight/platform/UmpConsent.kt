@@ -11,6 +11,16 @@ class UmpConsent(private val activity: Activity) {
         UserMessagingPlatform.getConsentInformation(activity)
 
     fun gatherConsent(onConsentGathered: (Boolean, String?) -> Unit) {
+        // Fast path: if the SDK already has a usable consent state (cached
+        // from a previous launch), skip the network round-trip and the form
+        // entirely. This is the recommended pattern from Google's UMP guide
+        // and saves a second of cold-start time + a network call on every
+        // launch.
+        if (consentInformation.canRequestAds()) {
+            onConsentGathered(true, null)
+            return
+        }
+
         // For testing purposes, you can force a geography and reset consent.
         // val debugSettings = ConsentDebugSettings.Builder(activity)
         //     .setDebugGeography(ConsentDebugSettings.DebugGeography.DEBUG_GEOGRAPHY_EEA)
@@ -27,16 +37,13 @@ class UmpConsent(private val activity: Activity) {
             {
                 UserMessagingPlatform.loadAndShowConsentFormIfRequired(activity) { loadAndShowError ->
                     if (loadAndShowError != null) {
-                        // Consent gathering failed.
                         onConsentGathered(false, loadAndShowError.message)
                     } else {
-                        // Consent has been gathered.
                         onConsentGathered(true, null)
                     }
                 }
             },
             { requestConsentError ->
-                // Consent info update failed.
                 onConsentGathered(false, requestConsentError.message)
             }
         )
