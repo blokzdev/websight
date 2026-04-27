@@ -1,17 +1,26 @@
+import 'dart:async';
+
+import 'package:firebase_core/firebase_core.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+
 import 'package:websight/ads/ads_controller.dart';
+import 'package:websight/config/feature_configs.dart';
 import 'package:websight/config/webview_config.dart';
+import 'package:websight/firebase_options.dart';
 import 'package:websight/lifecycle/analytics_controller.dart';
+import 'package:websight/lifecycle/billing_controller.dart';
+import 'package:websight/lifecycle/fcm_controller.dart';
 import 'package:websight/lifecycle/permissions_controller.dart';
+import 'package:websight/lifecycle/rating_controller.dart';
 import 'package:websight/lifecycle/update_controller.dart';
 import 'package:websight/shell/app_router.dart';
 import 'package:websight/theme.dart';
-import 'package:firebase_core/firebase_core.dart';
-import 'package:websight/firebase_options.dart';
 
-void main() async {
+Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
+
   try {
     await Firebase.initializeApp(
       options: DefaultFirebaseOptions.currentPlatform,
@@ -20,34 +29,45 @@ void main() async {
     debugPrint('Firebase initialization failed: $e');
   }
 
-  final configResult = await WebSightConfig.loadAndValidate();
-
-  if (configResult.report.errors.isNotEmpty &&
-      configResult.config.app.host.isEmpty) {
-    runApp(ErrorApp(report: configResult.report));
+  final result = await WebSightConfig.loadAndValidate();
+  if (result.report.errors.isNotEmpty && result.config.app.host.isEmpty) {
+    runApp(ErrorApp(report: result.report));
     return;
   }
 
-  // Initialize controllers
-  final analyticsController = AnalyticsController(config: configResult.config);
-  await analyticsController.initialize();
+  final config = result.config;
+  final features = WebSightFeatures.fromRaw(
+    config.raw,
+    appName: config.app.name,
+  );
 
-  final adsController = AdsController(config: configResult.config);
-  final updateController = UpdateController(config: configResult.config);
-  final permissionsController =
-      PermissionsController(config: configResult.config);
+  final analytics = AnalyticsController(config: config);
+  await analytics.initialize();
 
-  // Start the async initialization flows.
-  adsController.initialize();
-  updateController.checkForUpdate();
-  permissionsController.initializeAndRequestPermissions();
+  final ads = AdsController(config: config);
+  final updates = UpdateController(config: config);
+  final permissions = PermissionsController(config: config);
+  final fcm = FcmController(config: config);
+  final billing = BillingController(feature: features.billing);
+  final rating = RatingController(feature: features.rating);
+
+  // Fire-and-forget init flows — never block first frame.
+  unawaited(ads.initialize());
+  unawaited(updates.checkForUpdate());
+  unawaited(permissions.initializeAndRequestPermissions());
+  unawaited(fcm.initialize());
+  unawaited(billing.initialize());
+  unawaited(rating.maybePromptOnLaunch());
 
   runApp(
     MultiProvider(
       providers: [
-        Provider<WebSightConfig>.value(value: configResult.config),
-        Provider<AnalyticsController>.value(value: analyticsController),
-        ChangeNotifierProvider<AdsController>.value(value: adsController),
+        Provider<WebSightConfig>.value(value: config),
+        Provider<WebSightFeatures>.value(value: features),
+        Provider<AnalyticsController>.value(value: analytics),
+        ChangeNotifierProvider<AdsController>.value(value: ads),
+        ChangeNotifierProvider<FcmController>.value(value: fcm),
+        ChangeNotifierProvider<BillingController>.value(value: billing),
       ],
       child: const WebSightApp(),
     ),
@@ -60,12 +80,15 @@ class WebSightApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final config = context.watch<WebSightConfig>();
-    final appRouter = AppRouter(
-        config: config,
-        analyticsController: context.read<AnalyticsController>());
-    final appTheme = AppTheme(config: config.flutterUi.theme);
+    final features = context.read<WebSightFeatures>();
+    final router = AppRouter(
+      config: config,
+      features: features,
+      analyticsController: context.read<AnalyticsController>(),
+    );
+    final theme = AppTheme(config: config.flutterUi.theme);
 
-    final themeMode = switch (config.flutterUi.theme.brightness) {
+    final mode = switch (config.flutterUi.theme.brightness) {
       'dark' => ThemeMode.dark,
       'light' => ThemeMode.light,
       _ => ThemeMode.system,
@@ -73,19 +96,19 @@ class WebSightApp extends StatelessWidget {
 
     return MaterialApp.router(
       title: config.app.name,
-      theme: appTheme.buildTheme(),
-      darkTheme: appTheme.buildTheme(),
-      themeMode: themeMode,
-      routerConfig: appRouter.router,
+      theme: theme.buildTheme(),
+      darkTheme: theme.buildTheme(),
+      themeMode: mode,
+      routerConfig: router.router,
       debugShowCheckedModeBanner: false,
     );
   }
 }
 
-/// A simple app to display critical configuration errors.
 class ErrorApp extends StatelessWidget {
-  final ConfigReport report;
   const ErrorApp({super.key, required this.report});
+
+  final ConfigReport report;
 
   @override
   Widget build(BuildContext context) {
@@ -96,19 +119,19 @@ class ErrorApp extends StatelessWidget {
           backgroundColor: Colors.red,
         ),
         body: Padding(
-          padding: const EdgeInsets.all(16.0),
+          padding: const EdgeInsets.all(16),
           child: ListView(
             children: [
               const Text(
-                'Failed to load webview_config.yaml.',
-                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                'Failed to load assets/webview_config.yaml.',
+                style:
+                    TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
               ),
               const SizedBox(height: 12),
-              const Text(
-                  'Please fix the errors below and restart the application.'),
+              const Text('Fix the errors below and restart the application.'),
               const SizedBox(height: 20),
               Text(
-                'Errors:\n- ${report.errors.join("\n- ")}',
+                'Errors:\n- ${report.errors.join('\n- ')}',
                 style: const TextStyle(color: Colors.red),
               ),
             ],

@@ -43,15 +43,25 @@ class WebSightConfig {
   factory WebSightConfig.fromJson(Map<String, dynamic> json) =>
       _$WebSightConfigFromJson(json);
 
+  /// Raw decoded YAML map. Keeps a reference so feature controllers (FCM,
+  /// IAP, splash, offline, etc.) can pull optional configuration sections
+  /// without forcing every YAML key through the json_serializable model.
+  Map<String, dynamic>? _raw;
+  Map<String, dynamic> get raw => _raw ?? const <String, dynamic>{};
+
   static Future<ConfigValidationResult> loadAndValidate() async {
     final report = ConfigReport();
     try {
       final yamlString =
           await rootBundle.loadString('assets/webview_config.yaml');
       final yamlMap = loadYaml(yamlString) as YamlMap;
-      final jsonMap = json.decode(json.encode(yamlMap));
+      final jsonMap = json.decode(json.encode(yamlMap)) as Map<String, dynamic>;
+      // Some YAML files wrap the spec under a top-level "webview_config" key.
+      final root = (jsonMap['webview_config'] is Map<String, dynamic>)
+          ? jsonMap['webview_config'] as Map<String, dynamic>
+          : jsonMap;
 
-      var config = WebSightConfig.fromJson(jsonMap);
+      final config = WebSightConfig.fromJson(root).._raw = root;
       report.log('Configuration loaded and parsed successfully.');
       return ConfigValidationResult(config: config, report: report);
     } catch (e, s) {
