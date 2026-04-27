@@ -204,6 +204,31 @@ webview_config:
         action: "ui.toast:{message}"
 
   # =========================================================================
+  # LEGAL / DISCLAIMERS
+  # =========================================================================
+  legal:
+    # ✅ First-launch unofficial-app disclaimer dialog. Recommended when
+    # wrapping a third-party site you don't own (personal / dev /
+    # educational use). Acceptance is keyed on a hash of the body text,
+    # so editing this block re-prompts users on next launch.
+    unofficial_disclaimer:
+      enabled: false
+      title: "Unofficial app"
+      body: |
+        This app is an unofficial WebView wrapper around <site>.
+        It is not affiliated with or endorsed by <site operator>.
+        Content is provided as-is by <site>; <publisher> is not responsible
+        for its accuracy or availability.
+
+        By tapping "I understand", you accept these terms and use the app
+        for personal, development, or educational purposes.
+      accept_label: "I understand"
+      decline_label: "Exit"
+      # When true (default), declining exits the app via SystemNavigator.
+      # Set false for advisory mode (re-prompts on next rebuild).
+      require_accept: true
+
+  # =========================================================================
   # SECURITY
   # =========================================================================
   security:

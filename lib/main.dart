@@ -11,11 +11,13 @@ import 'package:websight/config/webview_config.dart';
 import 'package:websight/firebase_options.dart';
 import 'package:websight/lifecycle/analytics_controller.dart';
 import 'package:websight/lifecycle/billing_controller.dart';
+import 'package:websight/lifecycle/disclaimer_controller.dart';
 import 'package:websight/lifecycle/fcm_controller.dart';
 import 'package:websight/lifecycle/permissions_controller.dart';
 import 'package:websight/lifecycle/rating_controller.dart';
 import 'package:websight/lifecycle/update_controller.dart';
 import 'package:websight/shell/app_router.dart';
+import 'package:websight/shell/disclaimer_gate.dart';
 import 'package:websight/shell/webview_signals.dart';
 import 'package:websight/theme.dart';
 
@@ -51,6 +53,9 @@ Future<void> main() async {
   final fcm = FcmController(config: config);
   final billing = BillingController(feature: features.billing);
   final rating = RatingController(feature: features.rating);
+  final disclaimer = DisclaimerController(
+    feature: features.legal.unofficialDisclaimer,
+  );
 
   // Fire-and-forget init flows — never block first frame.
   unawaited(ads.initialize());
@@ -59,6 +64,7 @@ Future<void> main() async {
   unawaited(fcm.initialize());
   unawaited(billing.initialize());
   unawaited(rating.maybePromptOnLaunch());
+  unawaited(disclaimer.load());
 
   runApp(
     MultiProvider(
@@ -74,6 +80,7 @@ Future<void> main() async {
         ChangeNotifierProvider<AdsController>.value(value: ads),
         ChangeNotifierProvider<FcmController>.value(value: fcm),
         ChangeNotifierProvider<BillingController>.value(value: billing),
+        ChangeNotifierProvider<DisclaimerController>.value(value: disclaimer),
         ChangeNotifierProvider<WebViewSignals>(create: (_) => WebViewSignals()),
       ],
       child: const WebSightApp(),
@@ -108,6 +115,12 @@ class WebSightApp extends StatelessWidget {
       themeMode: mode,
       routerConfig: router.router,
       debugShowCheckedModeBanner: false,
+      // Wrap every route in the disclaimer gate. When the feature is
+      // disabled the gate is a transparent passthrough; when enabled it
+      // shows the modal dialog on top of the routed child until the
+      // user accepts (or declines + exits).
+      builder: (context, child) =>
+          DisclaimerGate(child: child ?? const SizedBox.shrink()),
     );
   }
 }

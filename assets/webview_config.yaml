@@ -224,6 +224,28 @@ behavior_overrides:
     confirm_before_exit: true
 
 # -----------------------------------------------------------------------------
+# [LEGAL / DISCLAIMERS]
+# Recommended when wrapping a third-party site you don't own. Acceptance is
+# keyed on a hash of the body text, so editing the body re-prompts on next
+# launch.
+# -----------------------------------------------------------------------------
+legal:
+  unofficial_disclaimer:
+    enabled: false
+    title: "Unofficial app"
+    body: |
+      This app is an unofficial WebView wrapper.
+      It is not affiliated with or endorsed by the operator of the embedded site.
+      Content is provided as-is; the publisher of this app is not responsible
+      for the accuracy or availability of that content.
+
+      By tapping "I understand", you accept these terms and use the app for
+      personal, development, or educational purposes.
+    accept_label: "I understand"
+    decline_label: "Exit"
+    require_accept: true
+
+# -----------------------------------------------------------------------------
 # [SPLASH SCREEN]
 # In-Flutter splash shown while the first WebView page loads. For the native
 # pre-Flutter splash (the first frame after process start, before the engine

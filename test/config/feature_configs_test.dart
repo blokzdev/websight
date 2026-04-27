@@ -174,6 +174,67 @@ void main() {
     });
   });
 
+  group('UnofficialDisclaimerFeature', () {
+    test('disabled by default with fully-formed defaults when section absent',
+        () {
+      final d = UnofficialDisclaimerFeature.fromMap(null);
+      expect(d.enabled, isFalse);
+      expect(d.title, isNotEmpty);
+      expect(d.body, isNotEmpty);
+      expect(d.acceptLabel, isNotEmpty);
+      expect(d.declineLabel, isNotEmpty);
+      expect(d.requireAccept, isTrue);
+    });
+
+    test('reads enabled + custom strings', () {
+      final d = UnofficialDisclaimerFeature.fromMap({
+        'enabled': true,
+        'title': 'Heads up',
+        'body': 'Personal use only.',
+        'accept_label': 'OK',
+        'decline_label': 'Quit',
+        'require_accept': false,
+      });
+      expect(d.enabled, isTrue);
+      expect(d.title, 'Heads up');
+      expect(d.body, 'Personal use only.');
+      expect(d.acceptLabel, 'OK');
+      expect(d.declineLabel, 'Quit');
+      expect(d.requireAccept, isFalse);
+    });
+
+    test('bodyDigest is stable for the same body and changes when body changes',
+        () {
+      final a = UnofficialDisclaimerFeature.fromMap({'body': 'Same text.'});
+      final b = UnofficialDisclaimerFeature.fromMap({'body': 'Same text.'});
+      final c = UnofficialDisclaimerFeature.fromMap({'body': 'Different text.'});
+      expect(a.bodyDigest, b.bodyDigest);
+      expect(a.bodyDigest, isNot(c.bodyDigest));
+    });
+
+    test('bodyDigest is whitespace-insensitive at the edges', () {
+      final a =
+          UnofficialDisclaimerFeature.fromMap({'body': '  hello world  '});
+      final b = UnofficialDisclaimerFeature.fromMap({'body': 'hello world'});
+      expect(a.bodyDigest, b.bodyDigest);
+    });
+  });
+
+  group('LegalFeature', () {
+    test('returns disabled disclaimer when section absent', () {
+      final l = LegalFeature.fromMap(null);
+      expect(l.unofficialDisclaimer.enabled, isFalse);
+    });
+
+    test('routes nested map into UnofficialDisclaimerFeature', () {
+      final l = LegalFeature.fromMap({
+        'unofficial_disclaimer': {'enabled': true, 'title': 'X'},
+      });
+      expect(l.unofficialDisclaimer.enabled, isTrue);
+      expect(l.unofficialDisclaimer.title, 'X');
+    });
+  });
+
   group('WebSightFeatures.fromRaw', () {
     test('builds full feature graph from a representative YAML map', () {
       final raw = <String, dynamic>{

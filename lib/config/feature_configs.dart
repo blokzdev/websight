@@ -410,6 +410,73 @@ class ErrorPagesFeature {
 }
 
 @immutable
+class UnofficialDisclaimerFeature {
+  final bool enabled;
+  final String title;
+  final String body;
+  final String acceptLabel;
+  final String declineLabel;
+  final bool requireAccept;
+
+  const UnofficialDisclaimerFeature({
+    required this.enabled,
+    required this.title,
+    required this.body,
+    required this.acceptLabel,
+    required this.declineLabel,
+    required this.requireAccept,
+  });
+
+  /// A stable identifier derived from the body text. Acceptance is keyed on
+  /// this digest so any edit to the disclaimer text invalidates prior
+  /// acceptances and re-prompts users on next launch — no manual version
+  /// bumping required.
+  String get bodyDigest =>
+      'd${body.trim().hashCode.toUnsigned(32).toRadixString(16)}';
+
+  factory UnofficialDisclaimerFeature.fromMap(Map<String, dynamic>? map) {
+    const defaults = UnofficialDisclaimerFeature(
+      enabled: false,
+      title: 'Unofficial app',
+      body:
+          'This app is an unofficial WebView wrapper. It is not affiliated '
+          'with or endorsed by the operator of the embedded website. '
+          'Content is provided as-is by that website; the publisher of this '
+          'app is not responsible for its accuracy or availability.\n\n'
+          'By tapping "I understand", you accept these terms and use the '
+          'app for personal, development, or educational purposes.',
+      acceptLabel: 'I understand',
+      declineLabel: 'Exit',
+      requireAccept: true,
+    );
+    if (map == null) return defaults;
+    return UnofficialDisclaimerFeature(
+      enabled: _bool(map['enabled']),
+      title: _str(map['title'], fallback: defaults.title),
+      body: _str(map['body'], fallback: defaults.body),
+      acceptLabel: _str(map['accept_label'], fallback: defaults.acceptLabel),
+      declineLabel: _str(map['decline_label'], fallback: defaults.declineLabel),
+      requireAccept: _bool(map['require_accept'], fallback: true),
+    );
+  }
+}
+
+@immutable
+class LegalFeature {
+  final UnofficialDisclaimerFeature unofficialDisclaimer;
+
+  const LegalFeature({required this.unofficialDisclaimer});
+
+  factory LegalFeature.fromMap(Map<String, dynamic>? map) {
+    return LegalFeature(
+      unofficialDisclaimer: UnofficialDisclaimerFeature.fromMap(
+        _typed<Map<String, dynamic>>(map?['unofficial_disclaimer']),
+      ),
+    );
+  }
+}
+
+@immutable
 class WebSightFeatures {
   final SplashFeature splash;
   final OfflineHtmlFeature offline;
@@ -423,6 +490,7 @@ class WebSightFeatures {
   final BottomTabsFeature bottomTabs;
   final DrawerFeature drawer;
   final ErrorPagesFeature errorPages;
+  final LegalFeature legal;
 
   const WebSightFeatures({
     required this.splash,
@@ -437,6 +505,7 @@ class WebSightFeatures {
     required this.bottomTabs,
     required this.drawer,
     required this.errorPages,
+    required this.legal,
   });
 
   factory WebSightFeatures.fromRaw(
@@ -474,6 +543,7 @@ class WebSightFeatures {
       ),
       errorPages: ErrorPagesFeature.fromMap(
           _typed<Map<String, dynamic>>(behaviorOverrides?['error_pages'])),
+      legal: LegalFeature.fromMap(_typed<Map<String, dynamic>>(raw['legal'])),
     );
   }
 }
