@@ -7,6 +7,7 @@ import 'package:websight/ads/ads_controller.dart';
 import 'package:websight/config/feature_configs.dart';
 import 'package:websight/config/webview_config.dart';
 import 'package:websight/shell/action_dispatcher.dart';
+import 'package:websight/shell/route_paths.dart';
 import 'package:websight/shell/webview_signals.dart';
 import 'package:websight/utils/helpers.dart';
 
@@ -48,22 +49,14 @@ class _AppShellState extends State<AppShell> {
 
   RouteConfig? _currentRoute(BuildContext context) {
     final location = GoRouterState.of(context).uri.toString();
-    final exact = widget.config.routes
-        .where((r) => r.path == location)
-        .toList(growable: false);
-    if (exact.isNotEmpty) return exact.first;
-    // Match a parameterized route like /web/item/:id against /web/item/123.
     for (final r in widget.config.routes) {
-      if (_matchesPattern(r.path, location)) return r;
+      // The router was registered with go_router-style paths
+      // (/web/item/:id), but config.routes still carries the YAML form
+      // (/web/item/{id}). Convert before matching.
+      final goPath = yamlPathToGoRouter(r.path);
+      if (routeMatchesPattern(goPath, location)) return r;
     }
     return widget.config.routes.isNotEmpty ? widget.config.routes.first : null;
-  }
-
-  bool _matchesPattern(String pattern, String path) {
-    final regex = RegExp(
-      '^${pattern.replaceAllMapped(RegExp(r':\w+'), (_) => r'[^/]+')}\$',
-    );
-    return regex.hasMatch(path);
   }
 
   @override

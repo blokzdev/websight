@@ -10,6 +10,7 @@ import 'package:url_launcher/url_launcher.dart';
 import 'package:webview_flutter/webview_flutter.dart';
 
 import 'package:websight/config/webview_config.dart';
+import 'package:websight/shell/route_paths.dart';
 
 /// Stable error codes returned to the JS bridge layer. Mirrors the codes used
 /// on the Kotlin side (see `MainActivity.kt`).
@@ -126,7 +127,19 @@ class JsBridge {
     final action = event.action;
     if (action.startsWith('navigate:')) {
       final route = _interpolate(action.substring('navigate:'.length), params);
-      if (!_isAllowedNavigationTarget(route)) {
+      // Navigation must hit a configured route; pages cannot push the host
+      // shell into surfaces the integrator never opted into.
+      final goPaths = config.routes.map((r) => RouteConfig(
+            path: yamlPathToGoRouter(r.path),
+            kind: r.kind,
+            title: r.title,
+            url: r.url,
+            pullToRefresh: r.pullToRefresh,
+            appbarVisible: r.appbarVisible,
+            icon: r.icon,
+            label: r.label,
+          ));
+      if (!isAllowedNavigationTarget(route, goPaths)) {
         debugPrint('JsBridge: rejected inbound navigate to "$route" '
             '(not in config.routes)');
         return;
@@ -142,25 +155,6 @@ class JsBridge {
     } else {
       debugPrint('JsBridge: unhandled inbound action "$action"');
     }
-  }
-
-  /// True when [target] matches a route in `config.routes` (literal match for
-  /// fixed paths, `:param` segments are accepted as wildcards). Pages can ask
-  /// the host to navigate, but only to routes the integrator declared.
-  bool _isAllowedNavigationTarget(String target) {
-    if (target.isEmpty || !target.startsWith('/')) return false;
-    for (final r in config.routes) {
-      if (r.path == target) return true;
-      if (r.path.contains(':') && _matchesPattern(r.path, target)) return true;
-    }
-    return false;
-  }
-
-  bool _matchesPattern(String pattern, String path) {
-    final regex = RegExp(
-      '^${pattern.replaceAllMapped(RegExp(r':\w+'), (_) => r'[^/]+')}\$',
-    );
-    return regex.hasMatch(path);
   }
 
   /// Resolves `{key}` placeholders against [params].
