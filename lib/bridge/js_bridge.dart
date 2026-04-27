@@ -126,6 +126,11 @@ class JsBridge {
     final action = event.action;
     if (action.startsWith('navigate:')) {
       final route = _interpolate(action.substring('navigate:'.length), params);
+      if (!_isAllowedNavigationTarget(route)) {
+        debugPrint('JsBridge: rejected inbound navigate to "$route" '
+            '(not in config.routes)');
+        return;
+      }
       if (!context.mounted) return;
       context.go(route);
     } else if (action.startsWith('ui.toast:')) {
@@ -137,6 +142,25 @@ class JsBridge {
     } else {
       debugPrint('JsBridge: unhandled inbound action "$action"');
     }
+  }
+
+  /// True when [target] matches a route in `config.routes` (literal match for
+  /// fixed paths, `:param` segments are accepted as wildcards). Pages can ask
+  /// the host to navigate, but only to routes the integrator declared.
+  bool _isAllowedNavigationTarget(String target) {
+    if (target.isEmpty || !target.startsWith('/')) return false;
+    for (final r in config.routes) {
+      if (r.path == target) return true;
+      if (r.path.contains(':') && _matchesPattern(r.path, target)) return true;
+    }
+    return false;
+  }
+
+  bool _matchesPattern(String pattern, String path) {
+    final regex = RegExp(
+      '^${pattern.replaceAllMapped(RegExp(r':\w+'), (_) => r'[^/]+')}\$',
+    );
+    return regex.hasMatch(path);
   }
 
   /// Resolves `{key}` placeholders against [params].

@@ -60,9 +60,16 @@ class WebSightMessagingService : FirebaseMessagingService() {
             flags = Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_SINGLE_TOP
             if (!route.isNullOrEmpty()) putExtra(EXTRA_ROUTE, route)
         }
+        // Each notification gets its own request code so its `route` extra
+        // doesn't get steamrolled by a previous notification's PendingIntent.
+        // Using messageId.hashCode() (or a time fallback) means concurrent
+        // pushes never collide, while FLAG_UPDATE_CURRENT keeps the extras
+        // fresh for the same id if FCM redelivers.
+        val notificationId = message.messageId?.hashCode()
+            ?: System.currentTimeMillis().toInt()
         val pendingIntent = PendingIntent.getActivity(
             this,
-            0,
+            notificationId,
             intent,
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
         )
@@ -77,7 +84,7 @@ class WebSightMessagingService : FirebaseMessagingService() {
             .build()
 
         val nm = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
-        nm.notify(message.messageId?.hashCode() ?: System.currentTimeMillis().toInt(), notification)
+        nm.notify(notificationId, notification)
     }
 
     private fun ensureChannel() {
