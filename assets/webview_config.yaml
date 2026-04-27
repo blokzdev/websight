@@ -205,3 +205,25 @@ notifications:
 behavior_overrides:
   back_button:
     confirm_before_exit: true
+
+# -----------------------------------------------------------------------------
+# [SPLASH SCREEN]
+# In-Flutter splash shown while the first WebView page loads. For the native
+# pre-Flutter splash (the first frame after process start, before the engine
+# draws), see the README section on `flutter_native_splash`.
+# -----------------------------------------------------------------------------
+splash:
+  enabled: false                # set true to display the splash overlay
+  timeout_ms: 1500              # how long the splash stays on screen
+  fade_out_ms: 300              # cross-fade duration once the splash exits
+  # image_asset: "assets/splash/logo.png"   # any Flutter asset path
+  # background_color: "#0B0B0C"             # falls back to theme surface
+  # tagline: "Loading your dashboard…"
+
+# -----------------------------------------------------------------------------
+# [DOWNLOADS] (consumed by the JS download interceptor)
+# -----------------------------------------------------------------------------
+downloads:
+  enabled: true
+  use_android_download_manager: true
+  support_blob_urls: true

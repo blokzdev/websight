@@ -20,14 +20,41 @@ List<String> _strList(Object? v) => v is List
 class SplashFeature {
   final bool enabled;
   final int timeoutMs;
+  final int fadeOutMs;
+  final String? imageAsset;
+  final String? backgroundColor;
+  final String? tagline;
 
-  const SplashFeature({required this.enabled, required this.timeoutMs});
+  const SplashFeature({
+    required this.enabled,
+    required this.timeoutMs,
+    required this.fadeOutMs,
+    required this.imageAsset,
+    required this.backgroundColor,
+    required this.tagline,
+  });
 
   factory SplashFeature.fromMap(Map<String, dynamic>? map) {
-    if (map == null) return const SplashFeature(enabled: false, timeoutMs: 1500);
+    if (map == null) {
+      return const SplashFeature(
+        enabled: false,
+        timeoutMs: 1500,
+        fadeOutMs: 300,
+        imageAsset: null,
+        backgroundColor: null,
+        tagline: null,
+      );
+    }
+    final raw = _typed<String>(map['image_asset']);
     return SplashFeature(
       enabled: _bool(map['enabled']),
       timeoutMs: _int(map['timeout_ms'], fallback: 1500),
+      fadeOutMs: _int(map['fade_out_ms'], fallback: 300),
+      imageAsset: (raw == null || raw.isEmpty)
+          ? null
+          : (raw.startsWith('assets/') ? raw : 'assets/$raw'),
+      backgroundColor: _typed<String>(map['background_color']),
+      tagline: _typed<String>(map['tagline']),
     );
   }
 }

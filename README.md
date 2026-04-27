@@ -105,7 +105,37 @@ If `key.properties` is missing, release builds fall back to debug
 signing — useful for quick smoke tests, but obviously not for the Play
 Store.
 
-### 8. Build
+### 8. (Optional) Customize the splash screen
+
+WebSight has two splash layers:
+
+- **Native pre-Flutter splash** — the first frame after process start,
+  before the Dart VM is up. Configured under `flutter_native_splash:`
+  in `pubspec.yaml`. Drop a logo at `assets/splash/logo.png`, point
+  `image:` at it, and run:
+
+  ```bash
+  dart run flutter_native_splash:create
+  ```
+
+- **In-Flutter splash overlay** — shown by `_SplashOverlay` while the
+  first WebView page loads. Configured under `splash:` in
+  `assets/webview_config.yaml`:
+
+  ```yaml
+  splash:
+    enabled: true
+    timeout_ms: 1500
+    fade_out_ms: 300
+    image_asset: "assets/splash/logo.png"
+    background_color: "#0B0B0C"
+    tagline: "Loading…"
+  ```
+
+Both are optional. When neither is configured the app shows a brief
+solid-color frame followed by the WebView's load progress.
+
+### 9. Build
 
 ```bash
 flutter build appbundle --release

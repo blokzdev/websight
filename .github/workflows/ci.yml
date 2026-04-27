@@ -2,9 +2,14 @@ name: CI
 
 on:
   push:
-    branches: [main]
+    branches: [main, 'claude/**', 'feature/**', 'fix/**']
   pull_request:
     branches: [main]
+
+# Cancel in-flight runs for the same branch when a new push lands.
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
   build:
@@ -49,3 +54,17 @@ jobs:
 
       - name: Build debug APK
         run: flutter build apk --debug --target-platform android-arm64
+
+      - name: Guard against secret leaks (no real Firebase keys committed)
+        run: |
+          set -e
+          if grep -RIn -E "blokz|AIzaSy[A-Za-z0-9_-]{33}" \
+              --include="*.json" \
+              --include="*.dart" \
+              --include="*.kt" \
+              android lib 2>/dev/null \
+              | grep -v "YOUR_FIREBASE_API_KEY"; then
+            echo "::error::Possible leaked Firebase keys or 'blokz' references."
+            exit 1
+          fi
+          echo "Secret guard passed."

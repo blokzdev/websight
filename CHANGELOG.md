@@ -7,6 +7,17 @@ follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 ## [Unreleased]
 
 ### Added
+- Configurable in-Flutter splash overlay. New
+  `splash.{image_asset, background_color, tagline, fade_out_ms}` keys
+  drive `_SplashOverlay`: optional centered logo, optional tagline,
+  configurable background that auto-picks a contrasting foreground,
+  cross-fade exit via `AnimatedSwitcher`. Falls back to a small
+  themed progress indicator when neither image nor tagline is set.
+- `flutter_native_splash` wired as a dev dependency with a starter
+  `flutter_native_splash:` block in `pubspec.yaml` and an explicit
+  `assets/splash/` directory. Documented one-liner regeneration step
+  (`dart run flutter_native_splash:create`) in README, alongside the
+  in-Flutter splash configuration.
 - HTTPS download auto-detection. When `downloads.enabled` and
   `downloads.use_android_download_manager` are both true, a small
   document-level click listener installed by the bridge intercepts

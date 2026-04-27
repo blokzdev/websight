@@ -39,6 +39,7 @@ dev_dependencies:
   build_runner: ^2.4.8
   change_app_package_name: ^1.5.0
   flutter_lints: ^6.0.0
+  flutter_native_splash: ^2.4.4
   flutter_test:
     sdk: flutter
   json_serializable: ^6.7.1
@@ -47,5 +48,23 @@ flutter:
   uses-material-design: true
   assets:
     - assets/
+    - assets/splash/
     - assets/website/css/
     - assets/offline/
+
+# Configures the native pre-Flutter splash (the very first frame, before the
+# Dart VM starts). To regenerate after editing this block, run:
+#   dart run flutter_native_splash:create
+# This rewrites Android drawables so the next install picks them up. The
+# in-Flutter splash overlay is configured separately in
+# `assets/webview_config.yaml` -> `splash:`.
+flutter_native_splash:
+  color: "#0B0B0C"
+  # image: assets/splash/logo.png   # uncomment + drop a file at this path
+  android_12:
+    color: "#0B0B0C"
+    # image: assets/splash/logo.png
+  fullscreen: false
+  android: true
+  ios: false
+  web: false

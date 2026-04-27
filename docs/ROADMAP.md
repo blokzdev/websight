@@ -120,13 +120,25 @@ The list below is what is actually in the repo and what is next.
   downloadable extension, routes HTTP/S to `registerHttpDownload` and
   blob: to `downloadBlob`. Modifier-clicks are left to the browser.
 
+### ✅ Configurable splash (landed)
+
+- `SplashFeature` extended with `imageAsset`, `backgroundColor`,
+  `tagline`, `fadeOutMs`. Asset paths are normalized so users can write
+  `splash/logo.png` or `assets/splash/logo.png`.
+- `_SplashOverlay` renders the optional logo + tagline over the
+  configured background (or theme surface), auto-picks a contrasting
+  foreground via `ThemeData.estimateBrightnessForColor`, and
+  cross-fades on exit.
+- Native pre-Flutter splash handed off to `flutter_native_splash`
+  (added as dev dep with a starter pubspec block and
+  `assets/splash/` directory). README documents the setup +
+  regeneration command.
+
 ### 🟡 Remaining for v1
 
 - **Server-side IAP receipt validation reference**: not in scope for v1.
   Documented as integrator responsibility; receipts arrive in
   `BillingController.purchases`.
-- **Configurable splash drawable**: today's splash is a centered
-  `CircularProgressIndicator`; v1.x will support a configurable image.
 - **Honest README rewrite**: capture the new state, drop the overclaims.
 - **`CHANGELOG.md` entry for v1.0**.
 

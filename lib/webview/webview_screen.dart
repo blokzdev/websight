@@ -6,6 +6,7 @@ import 'package:webview_flutter/webview_flutter.dart';
 
 import 'package:websight/config/feature_configs.dart';
 import 'package:websight/config/webview_config.dart';
+import 'package:websight/utils/helpers.dart';
 import 'package:websight/webview/webview_controller.dart' as wc;
 
 class WebViewScreen extends StatefulWidget {
@@ -88,7 +89,16 @@ class _WebViewScreenState extends State<WebViewScreen> {
                     ),
                   if (showOffline) _OfflineOverlay(features: _features, controller: controller),
                   if (showError) _ErrorOverlay(controller: controller, features: _features),
-                  if (_showSplash) const _SplashOverlay(),
+                  // The splash overlay paints over everything else (including
+                  // ad placements) until its timer fires; the fade lets the
+                  // page below reveal smoothly.
+                  AnimatedSwitcher(
+                    duration:
+                        Duration(milliseconds: _features.splash.fadeOutMs),
+                    child: _showSplash
+                        ? _SplashOverlay(splash: _features.splash)
+                        : const SizedBox.shrink(),
+                  ),
                 ],
               ),
             );
@@ -134,15 +144,60 @@ class _WebViewScreenState extends State<WebViewScreen> {
 }
 
 class _SplashOverlay extends StatelessWidget {
-  const _SplashOverlay();
+  const _SplashOverlay({required this.splash});
+
+  final SplashFeature splash;
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final bg = parseColor(splash.backgroundColor,
+        fallback: theme.colorScheme.surface);
+    final fg = ThemeData.estimateBrightnessForColor(bg) == Brightness.dark
+        ? Colors.white
+        : Colors.black;
+
     return Container(
-      color: theme.colorScheme.surface,
-      child: Center(
-        child: CircularProgressIndicator(color: theme.colorScheme.primary),
+      key: const ValueKey<String>('websight.splash'),
+      color: bg,
+      child: SafeArea(
+        child: Center(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              if (splash.imageAsset != null) ...[
+                Image.asset(
+                  splash.imageAsset!,
+                  width: 144,
+                  height: 144,
+                  fit: BoxFit.contain,
+                  errorBuilder: (_, __, ___) => Icon(
+                    Icons.broken_image_outlined,
+                    color: fg.withOpacity(0.6),
+                    size: 56,
+                  ),
+                ),
+                const SizedBox(height: 24),
+              ],
+              if (splash.tagline != null && splash.tagline!.isNotEmpty) ...[
+                Text(
+                  splash.tagline!,
+                  textAlign: TextAlign.center,
+                  style: theme.textTheme.titleMedium?.copyWith(color: fg),
+                ),
+                const SizedBox(height: 24),
+              ],
+              SizedBox(
+                width: 28,
+                height: 28,
+                child: CircularProgressIndicator(
+                  strokeWidth: 2.5,
+                  color: theme.colorScheme.primary,
+                ),
+              ),
+            ],
+          ),
+        ),
       ),
     );
   }

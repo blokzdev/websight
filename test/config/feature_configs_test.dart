@@ -7,12 +7,43 @@ void main() {
       final s = SplashFeature.fromMap(null);
       expect(s.enabled, isFalse);
       expect(s.timeoutMs, 1500);
+      expect(s.fadeOutMs, 300);
+      expect(s.imageAsset, isNull);
+      expect(s.backgroundColor, isNull);
+      expect(s.tagline, isNull);
     });
 
     test('reads enabled + timeout_ms', () {
       final s = SplashFeature.fromMap({'enabled': true, 'timeout_ms': 2500});
       expect(s.enabled, isTrue);
       expect(s.timeoutMs, 2500);
+      expect(s.fadeOutMs, 300);
+    });
+
+    test('normalizes image_asset path and reads background + tagline', () {
+      final s = SplashFeature.fromMap({
+        'enabled': true,
+        'fade_out_ms': 500,
+        'image_asset': 'splash/logo.png',
+        'background_color': '#0B0B0C',
+        'tagline': 'Loading…',
+      });
+      expect(s.fadeOutMs, 500);
+      expect(s.imageAsset, 'assets/splash/logo.png');
+      expect(s.backgroundColor, '#0B0B0C');
+      expect(s.tagline, 'Loading…');
+    });
+
+    test('keeps image_asset paths that already include assets/ prefix', () {
+      final s = SplashFeature.fromMap({
+        'image_asset': 'assets/splash/hero.svg',
+      });
+      expect(s.imageAsset, 'assets/splash/hero.svg');
+    });
+
+    test('treats empty image_asset as null', () {
+      final s = SplashFeature.fromMap({'image_asset': ''});
+      expect(s.imageAsset, isNull);
     });
   });
 

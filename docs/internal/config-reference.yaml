@@ -82,8 +82,15 @@ webview_config:
     top_threshold_dp: 50
 
   splash:
+    # Show an in-Flutter splash overlay while the first WebView page loads.
+    # For the native pre-Flutter splash (the very first frame), use the
+    # `flutter_native_splash` package — see README.
     enabled: false
-    timeout_ms: 2500
+    timeout_ms: 2500          # how long to keep the splash on screen
+    fade_out_ms: 300          # cross-fade duration when the splash is removed
+    image_asset: null         # e.g. "assets/splash/logo.png" (any Flutter asset)
+    background_color: null    # e.g. "#0B0B0C"; falls back to theme surface
+    tagline: null             # optional text shown under the image
 
   offline_local_html:
     open_local_by_default: false
