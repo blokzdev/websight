@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Disable backup of all app data by default. Customer apps that want
+  backups (Auto Backup or Device-to-Device transfer) should override
+  these rules and toggle android:allowBackup="true" in the manifest.
+-->
+<data-extraction-rules>
+    <cloud-backup>
+        <exclude domain="root" path="." />
+    </cloud-backup>
+    <device-transfer>
+        <exclude domain="root" path="." />
+    </device-transfer>
+</data-extraction-rules>

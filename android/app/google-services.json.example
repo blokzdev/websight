@@ -1,5 +1,5 @@
 {
-  "_comment": "PLACEHOLDER values — replace with your real Firebase project by running `flutterfire configure` (see README). Builds will succeed with this file as-is, but Firebase Analytics / Crashlytics / FCM will not work until you regenerate it.",
+  "_comment": "PLACEHOLDER. Run `flutterfire configure` after setting your unique applicationId in android/app/build.gradle.kts. That command will generate a real google-services.json (this file) and lib/firebase_options.dart. Do NOT commit the generated google-services.json — it is gitignored and contains your project's API keys.",
   "project_info": {
     "project_number": "0000000000",
     "project_id": "your-firebase-project-id",
@@ -10,7 +10,7 @@
       "client_info": {
         "mobilesdk_app_id": "1:0000000000:android:0000000000000000000000",
         "android_client_info": {
-          "package_name": "com.app.websight"
+          "package_name": "com.yourcompany.yourapp"
         }
       },
       "oauth_client": [],

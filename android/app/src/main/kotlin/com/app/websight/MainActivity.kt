@@ -7,43 +7,253 @@ import android.content.Context
 import android.content.Intent
 import android.net.Uri
 import android.os.Build
+import android.os.Bundle
 import android.os.Environment
 import android.provider.MediaStore
 import android.util.Base64
+import android.util.Log
+import android.webkit.MimeTypeMap
 import android.webkit.ValueCallback
 import com.app.websight.platform.ScannerActivity
 import com.app.websight.platform.UmpConsent
-import com.app.websight.platform.WebSightChromeClient
 import io.flutter.embedding.android.FlutterActivity
 import io.flutter.embedding.engine.FlutterEngine
 import io.flutter.plugin.common.MethodChannel
 import io.flutter.plugins.GeneratedPluginRegistrant
+import java.io.File
+import java.io.FileOutputStream
 
 class MainActivity : FlutterActivity() {
-    private var fileUploadCallback: ValueCallback<Array<Uri>>? = null
-    private val CHANNEL = "websight/method_channel"
-    private var barcodeResult: MethodChannel.Result? = null
+
+    companion object {
+        private const val CHANNEL = "websight/method_channel"
+        private const val SCANNER_REQUEST_CODE = 2001
+        private const val FILE_CHOOSER_REQUEST_CODE = 2002
+        private const val TAG = "WebSightMainActivity"
+    }
+
     private lateinit var umpConsent: UmpConsent
+    private var pendingBarcodeResult: MethodChannel.Result? = null
+    private var pendingFileUploadCallback: ValueCallback<Array<Uri>>? = null
 
     override fun configureFlutterEngine(flutterEngine: FlutterEngine) {
         GeneratedPluginRegistrant.registerWith(flutterEngine)
         umpConsent = UmpConsent(this)
 
-        MethodChannel(flutterEngine.dartExecutor.binaryMessenger, CHANNEL).setMethodCallHandler { call, result ->
-            when (call.method) {
-                "gatherConsent" -> {
-                    umpConsent.gatherConsent { success, errorMessage ->
-                        if (success) {
-                            result.success(null)
-                        } else {
-                            result.error("CONSENT_ERROR", errorMessage, null)
-                        }
-                    }
+        MethodChannel(flutterEngine.dartExecutor.binaryMessenger, CHANNEL)
+            .setMethodCallHandler { call, result -> handleMethodCall(call.method, call.arguments, result) }
+    }
+
+    private fun handleMethodCall(method: String, args: Any?, result: MethodChannel.Result) {
+        when (method) {
+            "gatherConsent" -> umpConsent.gatherConsent { ok, err ->
+                if (ok) result.success(null) else result.error("E_CONSENT", err, null)
+            }
+
+            "scanBarcode" -> startBarcodeScan(result)
+
+            "downloadBlob" -> {
+                @Suppress("UNCHECKED_CAST") val params = args as? Map<String, Any?>
+                if (params == null) {
+                    result.error("E_ARGS", "Expected map { base64data, filename, mimeType }", null)
+                    return
                 }
-                // ... other method calls
-                else -> result.notImplemented()
+                downloadBlob(
+                    base64data = params["base64data"] as? String,
+                    filename = params["filename"] as? String,
+                    mimeType = params["mimeType"] as? String,
+                    result = result,
+                )
+            }
+
+            "registerHttpDownload" -> {
+                @Suppress("UNCHECKED_CAST") val params = args as? Map<String, Any?>
+                if (params == null) {
+                    result.error("E_ARGS", "Expected map { url, userAgent, contentDisposition, mimeType }", null)
+                    return
+                }
+                registerHttpDownload(
+                    url = params["url"] as? String,
+                    userAgent = params["userAgent"] as? String,
+                    contentDisposition = params["contentDisposition"] as? String,
+                    mimeType = params["mimeType"] as? String,
+                    result = result,
+                )
+            }
+
+            else -> result.notImplemented()
+        }
+    }
+
+    // --- Barcode scanning ---
+
+    private fun startBarcodeScan(result: MethodChannel.Result) {
+        if (pendingBarcodeResult != null) {
+            result.error("E_BUSY", "A scan is already in progress", null)
+            return
+        }
+        pendingBarcodeResult = result
+        startActivityForResult(Intent(this, ScannerActivity::class.java), SCANNER_REQUEST_CODE)
+    }
+
+    // --- File uploads ---
+
+    /**
+     * Called by the WebView's chrome client adapter when the page invokes `<input type="file">`.
+     * We launch the system chooser and route the result back via [onActivityResult].
+     */
+    fun launchFileChooser(callback: ValueCallback<Array<Uri>>?, intent: Intent): Boolean {
+        if (pendingFileUploadCallback != null) {
+            pendingFileUploadCallback?.onReceiveValue(null)
+        }
+        pendingFileUploadCallback = callback
+        return try {
+            startActivityForResult(intent, FILE_CHOOSER_REQUEST_CODE)
+            true
+        } catch (e: Exception) {
+            Log.w(TAG, "Failed to launch file chooser", e)
+            pendingFileUploadCallback = null
+            false
+        }
+    }
+
+    @Deprecated("Deprecated in superclass, kept for WebChromeClient compatibility")
+    @Suppress("DEPRECATION")
+    override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
+        super.onActivityResult(requestCode, resultCode, data)
+        when (requestCode) {
+            SCANNER_REQUEST_CODE -> {
+                val r = pendingBarcodeResult
+                pendingBarcodeResult = null
+                if (r == null) return
+                if (resultCode == Activity.RESULT_OK) {
+                    r.success(data?.getStringExtra("barcode") ?: "")
+                } else {
+                    r.error("E_CANCELED", "Scan canceled", null)
+                }
+            }
+            FILE_CHOOSER_REQUEST_CODE -> {
+                val cb = pendingFileUploadCallback
+                pendingFileUploadCallback = null
+                if (cb == null) return
+                val uris = if (resultCode == Activity.RESULT_OK && data != null) {
+                    android.webkit.WebChromeClient.FileChooserParams.parseResult(resultCode, data)
+                } else {
+                    null
+                }
+                cb.onReceiveValue(uris)
             }
         }
     }
-    // ... rest of MainActivity
+
+    // --- Blob downloads ---
+    //
+    // Blob URLs (`blob:https://...`) cannot be intercepted by Android's DownloadManager.
+    // The JS bridge fetches the blob, base64-encodes it, and forwards it here. We decode
+    // and write to public Downloads via MediaStore (API 29+) or to legacy storage path.
+
+    private fun downloadBlob(
+        base64data: String?,
+        filename: String?,
+        mimeType: String?,
+        result: MethodChannel.Result,
+    ) {
+        if (base64data.isNullOrEmpty() || filename.isNullOrEmpty()) {
+            result.error("E_ARGS", "base64data and filename are required", null)
+            return
+        }
+        try {
+            val payload = base64data.substringAfter(",", base64data)
+            val bytes = Base64.decode(payload, Base64.DEFAULT)
+            val resolvedMime = mimeType?.takeIf { it.isNotBlank() }
+                ?: MimeTypeMap.getSingleton().getMimeTypeFromExtension(filename.substringAfterLast('.', ""))
+                ?: "application/octet-stream"
+
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+                val values = ContentValues().apply {
+                    put(MediaStore.Downloads.DISPLAY_NAME, filename)
+                    put(MediaStore.Downloads.MIME_TYPE, resolvedMime)
+                    put(MediaStore.Downloads.RELATIVE_PATH, Environment.DIRECTORY_DOWNLOADS)
+                    put(MediaStore.Downloads.IS_PENDING, 1)
+                }
+                val resolver = contentResolver
+                val uri = resolver.insert(MediaStore.Downloads.EXTERNAL_CONTENT_URI, values)
+                    ?: throw IllegalStateException("MediaStore returned null URI")
+                resolver.openOutputStream(uri)?.use { it.write(bytes) }
+                values.clear()
+                values.put(MediaStore.Downloads.IS_PENDING, 0)
+                resolver.update(uri, values, null, null)
+                result.success(uri.toString())
+            } else {
+                @Suppress("DEPRECATION")
+                val downloadsDir = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS)
+                if (!downloadsDir.exists()) downloadsDir.mkdirs()
+                val outFile = File(downloadsDir, filename)
+                FileOutputStream(outFile).use { it.write(bytes) }
+
+                val dm = getSystemService(Context.DOWNLOAD_SERVICE) as DownloadManager
+                @Suppress("DEPRECATION")
+                dm.addCompletedDownload(filename, filename, true, resolvedMime, outFile.absolutePath, bytes.size.toLong(), true)
+                result.success(outFile.toURI().toString())
+            }
+        } catch (e: Exception) {
+            Log.e(TAG, "downloadBlob failed", e)
+            result.error("E_INTERNAL", e.message, null)
+        }
+    }
+
+    // --- HTTPS downloads ---
+    //
+    // Triggered from the WebView's onNavigationRequest path on Dart side when a
+    // download-content URL is detected. We hand off to Android's DownloadManager
+    // so the user gets a system tray notification and standard Downloads/ landing.
+
+    private fun registerHttpDownload(
+        url: String?,
+        userAgent: String?,
+        contentDisposition: String?,
+        mimeType: String?,
+        result: MethodChannel.Result,
+    ) {
+        if (url.isNullOrEmpty()) {
+            result.error("E_ARGS", "url is required", null)
+            return
+        }
+        try {
+            val uri = Uri.parse(url)
+            val filename = guessFilename(url, contentDisposition, mimeType)
+            val request = DownloadManager.Request(uri)
+                .setTitle(filename)
+                .setNotificationVisibility(DownloadManager.Request.VISIBILITY_VISIBLE_NOTIFY_COMPLETED)
+                .setAllowedOverMetered(true)
+                .setAllowedOverRoaming(true)
+                .setDestinationInExternalPublicDir(Environment.DIRECTORY_DOWNLOADS, filename)
+
+            if (!userAgent.isNullOrEmpty()) request.addRequestHeader("User-Agent", userAgent)
+            if (!mimeType.isNullOrEmpty()) request.setMimeType(mimeType)
+            if (!contentDisposition.isNullOrEmpty()) {
+                // Some servers depend on cookies for auth; CookieManager is propagated
+                // automatically by the WebView, but a manual cookie header is sometimes
+                // required. The integrator can extend here if needed.
+            }
+
+            val dm = getSystemService(Context.DOWNLOAD_SERVICE) as DownloadManager
+            val id = dm.enqueue(request)
+            result.success(mapOf("id" to id, "filename" to filename))
+        } catch (e: Exception) {
+            Log.e(TAG, "registerHttpDownload failed", e)
+            result.error("E_INTERNAL", e.message, null)
+        }
+    }
+
+    private fun guessFilename(url: String, disposition: String?, mime: String?): String {
+        // Mirror DownloadManager's URLUtil.guessFileName but with safer defaults.
+        val urlGuess = android.webkit.URLUtil.guessFileName(url, disposition, mime)
+        return if (urlGuess.isNullOrBlank()) "download" else urlGuess
+    }
+
+    override fun onSaveInstanceState(outState: Bundle) {
+        // Nothing to persist; explicit override silences static analysis.
+        super.onSaveInstanceState(outState)
+    }
 }

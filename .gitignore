@@ -46,3 +46,13 @@ app.*.map.json
 
 # Ignore sensitive signing keys.
 /android/key.properties
+/android/app/upload-keystore.jks
+/android/app/release-key.jks
+
+# Backups
+*.bak
+*.orig
+
+# Generated Firebase config (do not commit production values; ship google-services.json.example only)
+# Note: a placeholder google-services.json is committed to keep `flutter build` working out of the box.
+# After running `flutterfire configure` your real google-services.json overwrites it locally.
