@@ -141,9 +141,11 @@ class _NativeSettingsPage extends StatelessWidget {
         _InfoTile(
           icon: Icons.shopping_cart_outlined,
           label: 'In-app purchases',
-          value: features.billing.enabled
-              ? '${features.billing.productIds.length} product(s)'
-              : 'Disabled',
+          value: !features.billing.enabled
+              ? 'Disabled'
+              : features.billing.productIds.isEmpty
+                  ? 'Enabled, no products configured'
+                  : '${features.billing.productIds.length} product(s)',
         ),
 
         if (_visibleLinks(config).isNotEmpty) ...[

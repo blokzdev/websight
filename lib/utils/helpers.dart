@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 
 /// Maps a YAML icon string (e.g. "Icons.home_outlined" or "home") into a real
@@ -67,17 +68,26 @@ const Map<String, IconData> _iconLookup = <String, IconData>{
 
 /// Parses a hex color (with or without leading `#`) into a [Color]. Supports
 /// 3, 6 and 8 hex characters; 8-char form encodes alpha first. Returns
-/// [fallback] (defaults to `Colors.transparent`) on parse failure rather
-/// than crashing the UI on a malformed config value.
+/// [fallback] (defaults to fully-transparent) on parse failure and emits a
+/// debug-only warning so a typo in YAML doesn't silently render invisible
+/// surfaces in production but also doesn't spam release logs.
 Color parseColor(String? hex, {Color fallback = const Color(0x00000000)}) {
   if (hex == null) return fallback;
   var v = hex.trim().toUpperCase().replaceAll('#', '');
-  if (v.isEmpty) return fallback;
+  if (v.isEmpty) {
+    if (kDebugMode) debugPrint('parseColor: empty value; using fallback');
+    return fallback;
+  }
   if (v.length == 3) {
     v = v.split('').map((c) => '$c$c').join();
   }
   if (v.length == 6) v = 'FF$v';
   final parsed = int.tryParse(v, radix: 16);
-  if (parsed == null) return fallback;
+  if (parsed == null) {
+    if (kDebugMode) {
+      debugPrint('parseColor: could not parse "$hex"; using fallback');
+    }
+    return fallback;
+  }
   return Color(parsed);
 }

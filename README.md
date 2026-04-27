@@ -103,7 +103,12 @@ Kotlin source files. To rename the directory tree under
 dart run change_app_package_name:main com.yourcompany.shop
 ```
 
-This is destructive (moves files); only run it once after step 3.
+This is destructive (moves files). **Order matters**: run this AFTER
+`tool/configure.dart`. Running them in the other order is fine for the
+manifest and `strings.xml`, but `change_app_package_name` rewrites
+`build.gradle.kts` `applicationId` to its argument, so anything you
+configured via the YAML before would be overwritten. The general rule:
+let `tool/configure.dart` be the last identity-touching step.
 
 ### 6. Wire Firebase
 
