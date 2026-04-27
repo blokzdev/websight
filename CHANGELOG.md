@@ -7,6 +7,53 @@ follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 ## [Unreleased]
 
 ### Added
+- v1.0 hardening sweep: 24 findings from a 3-agent audit landed in 10
+  reviewable chunks. Headlines below; see commit messages on the
+  branch for the per-finding rationale.
+  * Wiring fixes — file uploads now actually work (a real method-channel
+    pickFiles handler routes ACTION_GET_CONTENT through MainActivity;
+    the dead WebSightChromeClient.kt is gone), and the AppBar
+    `webview.reload` action signals the active WebViewScreen via a new
+    `WebViewSignals` ChangeNotifier instead of being a no-op.
+  * Native bugs — ScannerActivity gates CAMERA permission via the
+    Activity Result API and uses `AtomicBoolean.compareAndSet` so
+    multi-barcode frames cannot fire the listener twice; downloadBlob
+    moved off the UI thread to a dedicated executor with a 50 MiB cap
+    and rolls back the MediaStore pending row on write failure.
+  * Security — FCM PendingIntent uses a unique requestCode
+    (notificationId) so push-tap deep links no longer deliver stale
+    `route` extras; inbound `navigate:{route}` actions are allow-listed
+    against `flutter_ui.routes` so a page cannot push the host into an
+    undeclared surface.
+  * Honest config — `docs/internal/config-reference.yaml` rewritten
+    around explicit ✅ / 🛠 / 🚧 annotations; ~25 keys that were
+    parsed-and-discarded moved into a fenced "RESERVED / not yet wired"
+    section so integrators stop expecting runtime effect from them.
+  * Lifecycle — FcmController disposes its three FirebaseMessaging
+    listeners; AppShell memoizes the last-loaded ad route so rotation /
+    theme changes stop thrashing the banner; WebsightWebViewController
+    tracks a `_disposed` flag and short-circuits async injection
+    chains; UmpConsent skips the network round-trip when
+    canRequestAds() already returns true.
+  * Error visibility — BillingController surfaces failures via a
+    `lastError` field + Crashlytics.recordError so production billing
+    failures stop being silent debugPrints.
+  * Tests — extracted `lib/shell/route_paths.dart` (yamlPathToGoRouter,
+    stripParameterizedTail, routeMatchesPattern, substituteUrlParams,
+    isAllowedNavigationTarget) with full unit coverage; deduplicates
+    three previously-private copies of the same logic across
+    app_router, app_shell, and js_bridge.
+  * CI — runs `dart format` over `tool/` too; advisory
+    `flutter pub outdated` on every PR; new manifest-sanity step fails
+    CI when the deep-link host has drifted from `app.host`.
+  * Visual — adaptive launcher icon (mipmap-anydpi-v26/ic_launcher.xml)
+    + monochrome glyph + colors.xml for Android 8+ adaptive rendering
+    and Android 13+ themed icons; flutter_launcher_icons added as a
+    dev dep with a starter pubspec block.
+  * Bridge ergonomics — public
+    `WebSightBridge.dispatch(eventName, params)` JS method and a
+    "Built-in action grammars" table in docs/bridge-api.md so
+    integrators stop reaching for the internal `_postMessage`.
 - `tool/configure.dart` — single command that propagates app identity
   from `assets/webview_config.yaml` into the Android files that have to
   host those values literally:
@@ -98,6 +145,39 @@ follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   unawaited_futures, always_use_package_imports, etc.
 
 ### Fixed
+- File uploads (`<input type=file>`) no longer no-op. Replaced the
+  empty `_onShowFileSelector` shim with a real `pickFiles`
+  method-channel call.
+- AppBar `webview.reload` now actually reloads the WebView (was an
+  empty callback).
+- Scanner: missing CAMERA runtime permission gate caused a black
+  screen + indefinite Dart hang on Android 6+ devices that hadn't
+  granted camera. Multi-barcode frames could fire the listener twice.
+- `downloadBlob` ran on the UI thread, ANR-class hazard on multi-MB
+  blobs; OOM risk on very large payloads.
+- FCM notifications: tapping the second push delivered the first
+  push's `route` extra (PendingIntent requestCode collision).
+- Inbound `navigate:` accepted any string the page supplied. Now
+  rejected unless the route exists in `flutter_ui.routes`.
+- AppShell ad reload thrashed on every dependency change (rotation,
+  theme switch). Now memoized to actual route transitions.
+- FcmController stream listeners stacked across hot reloads in dev;
+  on real teardown they outlived the controller. Now canceled in
+  dispose.
+- WebView injection chain (CSS / JS / bridge / interceptor) could
+  fire after dispose if the user navigated fast. Now guarded.
+- UmpConsent re-fetched the consent state from the network on every
+  cold start. Skips when canRequestAds() already returns true.
+- BillingController errors only debugPrinted; release builds had no
+  visibility. Now stored as `lastError` + reported to Crashlytics.
+- `parseColor` silently returned transparent on malformed input;
+  now also debugPrints a one-line warning in dev.
+- ConfigurableNativeScreen IAP tile read "0 product(s)" when billing
+  was enabled but unconfigured; now reads "Enabled, no products
+  configured".
+- README fork-workflow note: `change_app_package_name` rewrites
+  applicationId, so it must run BEFORE `tool/configure.dart`. Added
+  an "Order matters" callout.
 - Adaptive banner ad height now reflects the live device orientation.
   `AdsController._getAdSize` previously hard-coded `Orientation.portrait`
   when calling `AdSize.getAnchoredAdaptiveBannerAdSize`, producing a
