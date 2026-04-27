@@ -112,9 +112,16 @@ void _printSummary(
   }
   stdout.writeln('');
   stdout.writeln('Next steps:');
-  stdout.writeln('  1. Run `flutterfire configure` to wire Firebase.');
-  stdout.writeln('  2. (Optional) `dart run change_app_package_name:main '
+  stdout.writeln('  1. Drop your launcher icon at assets/launcher/icon.png');
+  stdout.writeln('     (icon.kitchen is a good visual generator), then:');
+  stdout.writeln('     `dart run flutter_launcher_icons`');
+  stdout.writeln('     `dart run flutter_native_splash:create`');
+  stdout.writeln('  2. Run `flutterfire configure` to wire Firebase.');
+  stdout.writeln('  3. (Optional) `dart run change_app_package_name:main '
       '${i.applicationId ?? "com.yourcompany.yourapp"}` to rename the Kotlin');
-  stdout.writeln('     package directory to match.');
-  stdout.writeln('  3. `flutter pub get && flutter build apk --debug` to verify.');
+  stdout.writeln('     package directory to match. Run BEFORE re-running this');
+  stdout.writeln('     script — otherwise it will overwrite the applicationId.');
+  stdout.writeln('  4. `flutter pub get && flutter build apk --debug` to verify.');
+  stdout.writeln('');
+  stdout.writeln('See docs/WHITELABEL.md for the full end-to-end guide.');
 }

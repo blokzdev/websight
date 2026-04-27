@@ -7,6 +7,32 @@ follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 ## [Unreleased]
 
 ### Added
+- **Whitelabel guide** (`docs/WHITELABEL.md`) — end-to-end recipe for
+  taking the template, pointing it at any web app's domain, and
+  shipping a signed AAB to Play. Covers toolchain prereqs, identity,
+  icon generation (icon.kitchen + flutter_launcher_icons), splash,
+  Firebase + AdMob + IAP setup, signing, on-device smoke checklist,
+  Play Console listing + privacy + Data Safety, and trademark / ToS /
+  financial-services policy guidance for third-party-site wrappers.
+- **`legal:` config block** (`legal.unofficial_disclaimer.*`) — opt-in
+  first-launch disclaimer dialog. New `DisclaimerController` (backed
+  by `shared_preferences`) and `DisclaimerGate` widget wrap every
+  routed screen via `MaterialApp.router`'s `builder:`. The dialog is
+  modal and non-dismissable; on accept, the choice is persisted under
+  a key derived from the body's hash so any edit to the disclaimer
+  text invalidates prior acceptances. On decline with
+  `require_accept: true`, the app exits via `SystemNavigator.pop()`.
+  Recommended for any whitelabel of a site you don't own (personal /
+  dev / educational use).
+- **`examples/blockchair.yaml`** + `examples/README.md` — drop-in
+  starter config demonstrating a third-party-site whitelabel: ads
+  off, file uploads off, disclaimer on with blockchair-specific body,
+  splash + offline + downloads on. Header comment makes the
+  trademark/ToS responsibility explicit.
+- `tool/configure.dart`'s "Next steps" output now points at icon
+  generation (icon.kitchen + `flutter_launcher_icons`), the package-
+  rename ordering caveat, and `docs/WHITELABEL.md` for the full
+  guide.
 - v1.0 hardening sweep: 24 findings from a 3-agent audit landed in 10
   reviewable chunks. Headlines below; see commit messages on the
   branch for the per-finding rationale.

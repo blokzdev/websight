@@ -39,6 +39,12 @@ distributed as a fork-the-template starter, not a runtime.
 
 ## Workflow: clone → ship
 
+The condensed flow is below; the canonical end-to-end guide
+(toolchain, identity, icons, splash, Firebase, AdMob, signing, Play
+Console, trademark/ToS guidance) lives in
+**[docs/WHITELABEL.md](./docs/WHITELABEL.md)**. Drop-in starter configs
+live in [examples/](./examples/).
+
 ### 1. Fork or clone
 
 Each app you ship is an independent fork. Duplicate the `websight`

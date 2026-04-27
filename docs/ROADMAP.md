@@ -134,6 +134,19 @@ The list below is what is actually in the repo and what is next.
   `assets/splash/` directory). README documents the setup +
   regeneration command.
 
+### ✅ Whitelabel ergonomics (landed)
+
+- `docs/WHITELABEL.md` — end-to-end recipe for forking the template
+  to any web app's domain. Covers identity, icon generation
+  (icon.kitchen → `flutter_launcher_icons`), splash, Firebase / AdMob
+  / IAP, signing, smoke checklist, Play Console listing, and
+  trademark / ToS / financial-services policy guidance.
+- `examples/` directory — first entry `blockchair.yaml` is a complete
+  drop-in for the third-party-site wrapper case.
+- New `legal:` YAML block + `DisclaimerGate` widget for opt-in
+  first-launch unofficial-app disclaimers. Acceptance is hash-keyed
+  on the body text so edits re-prompt automatically.
+
 ### 🟡 Remaining for v1
 
 - **Server-side IAP receipt validation reference**: not in scope for v1.
