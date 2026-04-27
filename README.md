@@ -1,158 +1,147 @@
-# WebSight: The Declarative WebView App Factory
+# WebSight
 
-**WebSight is a production-ready, highly configurable Flutter starter project that turns any modern website into a native Android app.**
+**Declarative Android WebView app shell driven by a single
+`webview_config.yaml`.**
 
-Powered by a single `webview_config.yaml` file, WebSight acts as a declarative factory for building WebView-based apps. It provides a robust and secure shell that combines your web content with a native Flutter UI, monetization, and essential platform features, eliminating the need for custom native code for most use cases.
+Take any modern website and ship it to the Play Store with a hardened
+native shell, JS bridge, AdMob + UMP consent, in-app updates, FCM,
+in-app purchases, and analytics — all without writing platform code.
 
----
-
-## Vision
-
-The goal of WebSight is to be the fastest path from a web application to a polished, policy-compliant, and production-ready mobile app. It's designed for developers who want to leverage their existing web content while still offering users a first-class native experience, complete with features like barcode scanning, in-app updates, and native ads.
-
----
-
-## Features
-
-- **Declarative First**: The entire app—from theme and layout to feature flags and ad placements—is controlled by the `webview_config.yaml` file.
-- **Hybrid UI Layer**: Seamlessly blend your web content with a native Flutter UI, including configurable navigation (Drawer, Bottom Tabs, Top Tabs), an AppBar, and custom native screens.
-- **Hardened WebView Engine**: The WebView is secured with a strict host allowlist, secure handling of external links, popup blocking (`target="_blank"`), and robust error/offline state management.
-- **Powerful JavaScript Bridge**: A secure bridge (`window.WebSightBridge`) exposes powerful native device features directly to your web app's JavaScript context:
-  - Barcode Scanning (via CameraX and ML Kit)
-  - Native Sharing
-  - Device Information
-  - File Downloads (including `blob:` URLs)
-  - Inbound events to trigger native UI changes from the web (navigation, toasts).
-- **Monetization & Compliance Ready**:
-  - **Google Mobile Ads**: Built-in support for AdMob with configurable adaptive and collapsible banner placements.
-  - **User Consent**: Integrated Google User Messaging Platform (UMP) flow to ensure GDPR and privacy compliance before any ads are shown.
-- **Production-Ready Lifecycle**:
-  - **In-App Updates**: Automatic prompts for flexible or immediate app updates from the Play Store.
-  - **Analytics & Crash Reporting**: Deep integration with Firebase for automatic screen tracking, custom event logging, and crash reporting.
-  - **Permissions Handling**: Graceful, automatic handling of runtime permissions like notifications on modern Android versions.
-- **Polished UX**: Includes expected mobile features like Pull-to-Refresh and intelligent back-button navigation.
+WebSight is **Android-only** (iOS is on the v1.x roadmap) and is
+distributed as a fork-the-template starter, not a runtime.
 
 ---
 
-## Prerequisites: Setting Up Your Environment
+## What you get
 
-Before you begin, ensure your development environment is ready.
+- **One YAML file**: theme, layout (drawer / bottom tabs / top tabs / none),
+  app bar actions, drawer / FAB, deep links, host allowlist, ads,
+  analytics, FCM, in-app updates, in-app purchases, splash, offline
+  fallback, custom CSS / JS injection — all in
+  `assets/webview_config.yaml`. Full schema reference at
+  [`docs/internal/config-reference.yaml`](./docs/internal/config-reference.yaml).
+- **Hardened WebView**: strict host allowlist, SSL block, file://
+  navigation block, scheme handoff (tel/mailto/intent/geo/market) to
+  Custom Tabs, configurable user agent (system / append / custom).
+- **JS bridge** (`window.WebSightBridge`): scanBarcode, share,
+  getDeviceInfo, downloadBlob, openExternal — all Promise-based with
+  stable error codes. Origin-gated by config. See
+  [`docs/bridge-api.md`](./docs/bridge-api.md).
+- **Native pieces**: ML Kit barcode scanner (CameraX), file uploads,
+  blob → MediaStore writes, FCM service with default channel, in-app
+  updates (flexible / immediate), Crashlytics + Analytics auto-screen
+  tracking.
+- **Compliance**: Google UMP consent gate before
+  `MobileAds.initialize()`; deny-by-default backups; HTTPS-only network
+  security config; Android 13+ runtime notification permission.
+- **Production gradle**: ProGuard/R8 rules, optional release signing,
+  multidex, `compileSdk = 34`, `minSdk = 24`.
 
-### 1. Flutter SDK
+## Workflow: clone → ship
 
-Make sure you have the Flutter SDK installed. It is highly recommended to be on the latest stable version. You can check your version and upgrade by running:
+### 1. Fork or clone
 
-```bash
-# Check your current version
-flutter --version
+Each app you ship is an independent fork. Duplicate the `websight`
+folder for each project.
 
-# Upgrade to the latest stable release
-flutter upgrade
-```
-
-### 2. Firebase & FlutterFire CLIs
-
-These command-line tools are essential for connecting your app to Firebase. If you haven't installed them, run the following commands:
-
-```bash
-# Install the core Firebase CLI (requires Node.js)
-npm install -g firebase-tools
-
-# Activate the FlutterFire CLI for Flutter-specific integration
-dart pub global activate flutterfire_cli
-```
-
----
-
-## The WebSight Workflow: Building Your App
-
-This project is a **template**. To create a new app, you follow this workflow:
-
-### 1. Create a New Project Copy
-
-Duplicate the entire `websight` project folder to create a new, independent project for your app.
-
-```
-/my_apps/
-  ├── websight_starter/
-  └── my_new_app/      <-- A fresh copy
-```
-
-### 2. Get Dependencies
-
-Open your terminal at the root of the new project (`my_new_app/`) and run `flutter pub get` to download all the necessary packages.
+### 2. Install dependencies
 
 ```bash
 flutter pub get
 ```
 
-### 3. Set the Unique Application ID (CRITICAL)
+### 3. Set the application id (critical for Play Store)
 
-This is the most important step to make your app unique for the Google Play Store.
+Edit `android/app/build.gradle.kts`:
 
-- **Open the file**: `android/app/build.gradle.kts`
-- **Find the `applicationId`**: Inside the `defaultConfig` block, you will find this line:
-  ```kotlin
-  applicationId = "com.app.websight"
-  ```
-- **Change it** to your own unique package name:
-  ```kotlin
-  applicationId = "com.yourcompany.yournewapp"
-  ```
-- **(Optional) Refactor Package Name**: If you want to change the Dart package name in your `pubspec.yaml` and native folders for consistency, a tool like `change_app_package_name` can be used, but changing the `applicationId` is the only mandatory step.
+```kotlin
+applicationId = "com.yourcompany.yourapp"
+```
 
-### 4. Connect to Firebase
+The `change_app_package_name` dev dependency can also rename the Kotlin
+package if you want full consistency:
 
-Each app needs its own Firebase project. The `flutterfire configure` command handles this for you.
-
-**Important "Don'ts":**
-*   **Do NOT run `firebase init`**.
-*   **Do NOT manually create `firebase_options.dart`**.
-
-Run the command in your terminal at the project root:
 ```bash
+dart run change_app_package_name:main com.yourcompany.yourapp
+```
+
+### 4. Wire Firebase
+
+```bash
+npm install -g firebase-tools         # if not already
+dart pub global activate flutterfire_cli
 flutterfire configure
 ```
-Follow the prompts to connect to your Firebase project. The tool will use the `applicationId` you set in the previous step to register the app and generate the correct configuration files.
 
-### 5. Define Your App in `webview_config.yaml`
+This regenerates `android/app/google-services.json` and
+`lib/firebase_options.dart` with your project's real values. The repo
+ships placeholder versions so the project builds out of the box.
 
-This is where you bring your app to life. Rename `assets/webview_config.yaml.example` to `assets/webview_config.yaml` and customize it to match your vision.
+### 5. Edit `assets/webview_config.yaml`
 
-### 6. Build and Release
+Set `app.host`, `app.home_url`, your routes, theme, allowlist, ads, FCM
+flags, and so on. Keep the host in `app.host`,
+`security.restrict_to_hosts`, and `navigation.deep_links.hosts` in sync.
 
-- **Set Up Signing Keys**: Follow the official Flutter guide to [create an upload keystore](https://docs.flutter.dev/deployment/android#create-an-upload-keystore) and configure it in `android/app/build.gradle.kts` as instructed by the comments in that file.
-- **Build the App Bundle**:
-  ```bash
-  flutter build appbundle --release
-  ```
-- The output is a standard Android App Bundle (`.aab`) ready for the Google Play Store.
+### 6. (Optional) Update deep-link host
 
----
+Edit `android/app/src/main/AndroidManifest.xml` — the `<intent-filter
+android:autoVerify="true">` block has a `YOUR_PRIMARY_HOST` placeholder.
+For full app links, host
+`https://your-host/.well-known/assetlinks.json`.
 
-## Troubleshooting
+### 7. Set up signing for release
 
-- **Hundreds of Errors & "uri_does_not_exist"**:
-  - **Problem**: The project's dependencies are missing.
-  - **Solution**: Run `flutter pub get` in your terminal at the project root.
+Create `android/key.properties` (gitignored):
 
-- **"flutter.sdk not set in local.properties"**:
-  - **Problem**: Your IDE (like Android Studio) opened the `android` subfolder instead of the project root.
-  - **Solution**: Close the project. Go to `File` > `Open` and select the **root folder** of your Flutter project.
+```
+storePassword=...
+keyPassword=...
+keyAlias=upload
+storeFile=/absolute/path/to/upload-keystore.jks
+```
 
-- **`flutter upgrade` Fails with "file is being used by another process"**:
-  - **Problem**: Your IDE is locking the SDK files.
-  - **Solution**: Completely close your IDE (`File` > `Exit`). Open a standalone terminal and run `flutter upgrade` from there.
+If `key.properties` is missing, release builds fall back to debug
+signing — useful for quick smoke tests, but obviously not for the Play
+Store.
 
----
+### 8. Build
 
-## Project Structure
+```bash
+flutter build appbundle --release
+```
 
-- **`assets/webview_config.yaml`**: The single source of truth for app configuration.
-- **`lib/config/`**: Dart models that represent the YAML structure.
-- **`lib/shell/`**: The Flutter UI layer (the App Shell and Router).
-- **`lib/webview/`**: The core WebView implementation.
-- **`lib/bridge/`**: The Flutter side of the JavaScript-to-native bridge.
-- **`lib/lifecycle/`**: Controllers for managing app lifecycle events.
-- **`lib/native_screens/`**: Placeholder native Flutter screens.
-- **`android/app/src/main/kotlin/.../`**: Native Android (Kotlin) code for platform-specific features.
+Output: `build/app/outputs/bundle/release/app-release.aab`.
+
+## Project structure
+
+- `assets/webview_config.yaml` — single source of truth.
+- `assets/websight.js` — bridge helper injected into every page.
+- `assets/offline/index.html` — offline fallback page.
+- `lib/config/` — typed config models (`webview_config.dart`,
+  `feature_configs.dart`).
+- `lib/shell/` — app shell, router, action dispatcher.
+- `lib/webview/` — WebView controller + screen.
+- `lib/bridge/` — Dart side of the JS bridge.
+- `lib/lifecycle/` — analytics, updates, permissions, FCM, billing,
+  rating.
+- `lib/native_screens/` — placeholder native screens you customize.
+- `android/app/src/main/kotlin/com/app/websight/` — `MainActivity` and
+  platform plugins (scanner, UMP consent, file uploads, FCM service).
+
+## Status
+
+WebSight is mid-flight on a v1 hardening pass. See
+[`docs/ROADMAP.md`](./docs/ROADMAP.md) for what is live, what is in
+progress, and what is deferred.
+
+## Contributing
+
+See [`CONTRIBUTING.md`](./CONTRIBUTING.md). PRs are welcome; the
+maintained scope is the engine itself, not customer-specific
+integrations.
+
+## License
+
+(Insert your chosen license here — MIT and Apache-2.0 are both common
+for templates of this kind.)

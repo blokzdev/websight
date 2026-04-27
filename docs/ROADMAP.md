@@ -1,152 +1,146 @@
-# WebSight Development Roadmap
+# WebSight Roadmap
 
-This document outlines the development plan for WebSight, a universal WebView app shell. It tracks progress across different phases, from the core foundation to production-ready features.
-
----
-
-## Phase 1: Core Foundation & Configuration
-
-**Status: ✅ Complete**
-
-This phase focused on setting up the project structure, defining the core architecture, and implementing the configuration loading and validation system.
-
-- [x] **Project Scaffolding**: Create the initial Flutter project structure.
-- [x] **Dependency Setup**: Add all necessary dependencies to `pubspec.yaml`.
-- [x] **Initial Blueprint**: Create `docs/BLUEPRINT.md` outlining the app's vision and architecture.
-- [x] **Configuration Models**: Define Dart models for `webview_config.yaml` using `json_serializable`.
-- [x] **Config Loader & Validator**: Implement the logic to load, parse, validate, and normalize the YAML configuration at startup.
-- [x] **Initial File Stubs**: Create placeholder files for all major components.
+This is the **honest** roadmap. It supersedes the earlier "all phases ✅"
+status. The previous markings did not reflect the state of the code (the
+native bridge had placeholder branches, several config keys were parsed and
+discarded, the Gradle build was wired to a Windows-specific path, etc.).
+The list below is what is actually in the repo and what is next.
 
 ---
 
-## Phase 2: UI Shell & Routing
+## v1 (in progress)
 
-**Status: ✅ Complete**
+### ✅ Foundation hardening (landed)
 
-This phase focused on building the visual shell of the application, including navigation, layout, and theming, all driven by the `webview_config.yaml` file.
+- Repo hygiene: removed leaked `blokz` Firebase clients from
+  `google-services.json`; deleted dead `MainActivity` duplicates and the
+  unrelated 37KB `GEMINI.md` AI-agent prompt; consolidated platform Kotlin
+  under one canonical package; tightened lint rules
+  (`analysis_options.yaml`).
+- Gradle: rewrote `android/app/build.gradle.kts` in proper Kotlin DSL
+  (was Groovy syntax inside a `.kts` file → would not compile); replaced
+  Windows-only `C:/dev/flutter/...` path in `settings.gradle.kts` with
+  `local.properties` lookup; added explicit dependency declarations
+  (AppCompat, CameraX, ML Kit, UMP, Play Core, Browser Custom Tabs); safe
+  optional signing config that falls back to debug signing when
+  `key.properties` is missing.
+- Android polish: ProGuard rules, network security config (HTTPS-only base
+  with dev cleartext template), data extraction rules (no backups by
+  default), tightened FileProvider paths, default notification channel
+  meta-data, explicit `<queries>` for Android 11+ visibility, AdMob app id
+  meta-data placeholder, deep-link `<intent-filter android:autoVerify>`
+  template.
 
-- [x] **App Router Implementation**:
-  - [x] Flesh out `AppRouter` using `go_router`'s `ShellRoute`.
-  - [x] Ensure correct routing to both WebView (`/web/*`) and native (`/native/*`) screens.
-- [x] **App Shell Layouts**:
-  - [x] Implement the `AppShell` to dynamically build the UI based on `layout.style`.
-  - [x] Support `"drawer"`, `"bottom_tabs"`, `"top_tabs"`, and `"none"` layouts.
-- [x] **Dynamic Themeing**:
-  - [x] Apply theme settings from the config (brightness, primary color, Material 3).
-  - [x] Load custom fonts using `google_fonts`.
-- [x] **Dynamic AppBar**:
-  - [x] Control AppBar visibility and build actions from the config.
+### ✅ Native bridge (landed)
+
+- `MainActivity` method-channel handler now covers every contract method:
+  `gatherConsent`, `scanBarcode` (launches `ScannerActivity`, routes the
+  result via `onActivityResult`, `E_BUSY` guard against concurrent scans),
+  `downloadBlob` (Base64 → `MediaStore.Downloads` on API 29+, legacy
+  Downloads dir + `addCompletedDownload` on API ≤ 28), `registerHttpDownload`
+  (DownloadManager enqueue), file uploads through `WebSightChromeClient`.
+- Dart `JsBridge`: stable error codes (`E_PERMISSION`, `E_CANCELED`,
+  `E_ARGS`, `E_INTERNAL`, `E_ORIGIN`, `E_UNSUPPORTED`); runtime origin
+  enforcement (drops calls when `currentUrl().host` is not in
+  `security.restrict_to_hosts`); JSON-encoded callback id interpolation
+  (no raw quote injection); real `device_info_plus` values; structured
+  error payloads.
+- `assets/websight.js`: Promise contract returns `{code,message}` on reject;
+  monotonic callback id; defensive `postMessage` when channel missing.
+- `WebSightMessagingService` for FCM (silent payload pass-through, default
+  channel creation, route-extra propagation for push-tap deep linking).
+
+### ✅ Shell completeness (landed)
+
+- `lib/config/feature_configs.dart`: hand-rolled feature configs for
+  splash, offline HTML, custom user scripts, user agent modes, file uploads,
+  downloads, billing, rating prompt, FAB, bottom tabs, drawer header/items,
+  error pages. Avoids forcing a `build_runner` regenerate every time a new
+  YAML key is added.
+- `lib/shell/action_dispatcher.dart`: parses YAML action strings —
+  `navigate:/path`, `webview.reload`, `webview.back`, `bridge.<method>`,
+  `store.rate`, `noop` — used by AppBar / drawer / FAB / inbound events.
+- `app_shell.dart`: AppBar actions, drawer (with header + items + footer),
+  bottom navigation, and FAB are all driven from config.
+- `app_router.dart`: initial location resolves from `app.home_url` against
+  the route table; parameterized routes work end-to-end (YAML `/web/item/{id}`
+  → go_router `/web/item/:id` with `{id}` substituted into the page URL).
+
+### ✅ WebView features (landed)
+
+- Splash overlay (`splash.enabled`, `splash.timeout_ms`).
+- Offline overlay with retry (`behavior_overrides.error_pages`,
+  `offline_local_html`).
+- Custom CSS / JS injection on page-finish from
+  `webview_settings.custom_user_scripts`.
+- User-agent modes: `system` / `append` / `custom`.
+- `WebsightWebViewController.loadOfflineFallback()` for the bundled
+  `assets/offline/index.html`.
+
+### ✅ Lifecycle controllers (landed)
+
+- `permissions_controller.dart` finally honors
+  `notifications.post_notifications_permission`.
+- `fcm_controller.dart`: foreground listener, token refresh stream,
+  cold-start `getInitialMessage`. Initializes only when
+  `notifications.fcm_enabled` is true.
+- `billing_controller.dart`: `in_app_purchase` wrapper around
+  `billing.product_ids` (refresh / buy / restore / purchase stream).
+- `rating_controller.dart`: launch counter via `shared_preferences`,
+  fires `in_app_review.requestReview()` once `rating_prompt.after_launches`
+  is reached.
+
+### ✅ Tests + CI (landed)
+
+- Unit tests for `feature_configs.dart`, `helpers.dart`, and
+  `action_dispatcher.dart`.
+- GitHub Actions workflow runs format check, `flutter analyze`,
+  `flutter test --coverage`, and a debug Android build on every PR.
+
+### 🟡 Remaining for v1
+
+- **Native screens (`lib/native_screens/*.dart`)**: still UI-only stubs.
+  v1 ships them as such — they are intended to be customized per integrator.
+  We will add an example "ConfigurableNativeScreen" that consumes Provider
+  before tagging v1.0.
+- **Server-side IAP receipt validation reference**: not in scope for v1.
+  Documented as integrator responsibility; receipts arrive in
+  `BillingController.purchases`.
+- **HTTPS DownloadListener**: today the Dart layer can call
+  `registerHttpDownload` over the method channel, but the WebView itself
+  doesn't auto-detect download links. Workaround: the integrator's web
+  page calls `WebSightBridge.downloadBlob(...)`; full auto-detection is a
+  v1.1 item (it requires a fork or a DOM content script).
+- **Configurable splash drawable**: today's splash is a centered
+  `CircularProgressIndicator`; v1.x will support a configurable image.
+- **Honest README rewrite**: capture the new state, drop the overclaims.
+- **`CHANGELOG.md` entry for v1.0**.
 
 ---
 
-## Phase 3: WebView Engine Enhancement
+## v1.x
 
-**Status: ✅ Complete**
+- iOS support (WKWebView shell, ATT consent, App Store metadata, signing).
+- Single-binary remote-config variant (signed config download with TOFU + rotation).
+- CLI scaffolder: `dart run websight new --config foo.yaml` produces a
+  ready-to-build project.
+- Server-side IAP validation reference impl (Cloud Functions + Play
+  Developer API).
+- WebView download auto-detection.
 
-This phase enhanced the core WebView functionality, focusing on navigation control, platform-specific features, and robust error handling.
+## v2
 
-- [x] **Advanced Navigation Control**:
-  - [x] Solidify `NavigationDelegate` logic to enforce host restrictions.
-  - [x] Handle external links and custom schemes (`tel:`, `mailto:`, etc.).
-  - [x] Intercept `onCreateWindow` to handle popups.
-- [x] **Android WebView Features**:
-  - [x] **File Uploads**: Implement `WebChromeClient.onShowFileChooser`.
-  - [x] **HTTP/S Downloads**: Implement a `DownloadListener` using Android's `DownloadManager`.
-- [x] **Error & State Handling**:
-  - [x] Implement offline/error page logic.
-  - [x] Implement configurable back button behavior (`webview.goBack()` vs. app exit).
-  - [x] Block insecure navigations and SSL errors.
-- [x] **Pull to Refresh**: Implement `RefreshIndicator` based on per-route config.
-
----
-
-## Phase 4: JavaScript Bridge & Native Integration
-
-**Status: ✅ Complete**
-
-This phase implemented the two-way communication channel between the web content and the native Flutter/Android layers.
-
-- [x] **JavaScript Bridge**:
-  - [x] Finalize the `assets/websight.js` helper for a clean, `Promise`-based API.
-  - [x] Implement Flutter-side message handlers for all configured methods and inbound events.
-  - [x] Enforce `security.secure_bridge_origin_only` from the config.
-- [x] **Native Method Channel Implementation**:
-  - [x] **Barcode Scanning**: Implement `ScannerActivity` with CameraX and ML Kit.
-  - [x] **Blob Downloads**: Implement Base64 decoding and file saving via `MediaStore`.
-  - [x] **Utility Methods**: Implement native handlers for `share`, `getDeviceInfo`, and `openExternal`.
+- Material You dynamic theming.
+- Interstitial / rewarded ads.
+- Expanded JS bridge: biometric auth, geolocation, contacts, haptics.
+- AI contextual chat (Gemini API): page-aware in-app assistant.
+- AI app factory: agent that scaffolds a WebSight project from a URL.
 
 ---
 
-## Phase 5: Monetization & Compliance
+## How to track progress
 
-**Status: ✅ Complete**
-
-This phase integrated monetization through ads and ensured compliance with platform requirements like user consent.
-
-- [x] **User Messaging Platform (UMP) Consent**:
-  - [x] Implement the full UMP flow in `UmpConsent.kt`.
-  - [x] Ensure `MobileAds.initialize()` is called only after a valid consent status is obtained.
-- [x] **AdMob Integration**:
-  - [x] Implement logic to display banners based on global and per-route configurations.
-  - [x] Support `"adaptive"` banner types.
-  - [x] Support `"collapsible"` banner types.
-
----
-
-## Phase 6: App Lifecycle & Polish
-
-**Status: ✅ Complete**
-
-This phase focused on improving the overall user experience with lifecycle features, analytics, and building out the native UI sections.
-
-- [x] **In-App Updates**:
-  - [x] Integrate the `in_app_update` package.
-  - [x] Implement both `"flexible"` and `"immediate"` update flows based on the config.
-- [x] **Analytics & Crash Reporting**:
-  - [x] Fully integrate Firebase Analytics and Firebase Crashlytics.
-  - [x] Add hooks to log key events (e.g., route changes).
-- [x] **Notifications**:
-  - [x] Implement the runtime permission request for `POST_NOTIFICATIONS` on Android 13+.
-- [x] **Native Screens**:
-  - [x] Build out the UI for the placeholder native screens (`Watchlist`, `Settings`, etc.).
-
----
-
-## Phase 7: Documentation & Release Preparation
-
-**Status: ✅ Complete**
-
-This phase prepares the project for public consumption or handover, with a focus on clear documentation and release readiness.
-
-- [x] **Comprehensive `README.md`**: Write a detailed README with project overview, features, setup instructions, and configuration guide.
-- [x] **Example Configuration**: Create a heavily commented `webview_config.yaml.example` file that explains every available option.
-- [x] **Release Build**:
-  - [x] Configure Android signing keys for a production build.
-  - [x] Set up ProGuard/R8 rules for code shrinking.
-  - [x] Perform a final round of testing on a release build.
-
----
-
-## Future Builds (v2 and Beyond)
-
-This section outlines potential features and enhancements for future versions of WebSight, post-launch.
-
-- **Advanced Flutter UI**:
-  - **Parameterized Routes**: Implement logic to handle dynamic parameters in web routes (e.g., `/item/{id}`).
-  - **Granular Navigation**: Allow `drawer` and `bottom_tabs` items to be configured independently of `routes`, with support for headers, dividers, and action-triggers (e.g., `bridge.scanBarcode`).
-  - **Material You Theming**: Add support for dynamic color theming based on the user's wallpaper.
-- **Firebase & Notifications**:
-  - **Firebase Cloud Messaging (FCM)**: Add a full setup for receiving and handling push notifications and bridging them to the JavaScript context.
-- **Monetization & Engagement**:
-  - **Advanced Ads**: Implement `interstitial` and `rewarded` ad formats.
-  - **In-App Purchases**: Integrate a billing package to manage subscriptions and one-time products.
-  - **Rating Prompt**: Integrate the `in_app_review` package to intelligently ask users for a review.
-- **AI-Powered Features**:
-  - **AI-Powered Contextual Chat (Frontend, Users)**: Integrate the Gemini API to provide an in-app chat assistant that is "context-aware" of the current URL, page content, or a screenshot.
-  - **AI-Powered App Factory (Backend, Developers)**: Create a command-line or chat-based tool that uses an AI agent to automate the entire process of creating a new WebSight app.
-- **Enhanced WebView & Offline Experience**:
-  - **Splash Screen**: Implement a configurable splash screen that can be shown for a set duration.
-  - **Offline Content**: Implement logic to load a local HTML page from assets as a fallback when the user is offline.
-  - **Enhanced Caching**: Implement a more sophisticated caching strategy for web assets.
-- **Expanded JavaScript Bridge**:
-  - Add more native APIs to the bridge, such as biometric authentication (`local_auth`), geolocation, or contacts.
+Each section above maps to commits on the `claude/project-review-v1-roadmap-Wi8H8`
+branch. The internal plan lives at `/root/.claude/plans/` (developer
+machine only) and at `docs/internal/config-reference.yaml` for the
+canonical YAML schema.
