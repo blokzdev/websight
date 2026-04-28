@@ -56,10 +56,18 @@ jobs:
         run: |
           set -e
           host=$(grep -E '^\s+host:' assets/webview_config.yaml | head -1 | sed -E 's/.*"([^"]+)".*/\1/')
-          if [ -z "$host" ] || [ "$host" = "YOUR_PRIMARY_HOST_HERE" ]; then
-            echo "skipping: app.host is unset / placeholder ($host)"
-            exit 0
-          fi
+          # Skip when the YAML is still on a template default. Forks set the
+          # host to their own domain via `dart run tool/configure.dart`, which
+          # is what this check guards against forgetting. The unmodified
+          # template ships with `flutter.dev` (the demo home url) and the
+          # canonical reference uses `YOUR_PRIMARY_HOST_HERE` — neither
+          # represents a fork that should have a propagated manifest.
+          case "$host" in
+            ""|YOUR_PRIMARY_HOST_HERE|flutter.dev)
+              echo "skipping: app.host is template default ($host)"
+              exit 0
+              ;;
+          esac
           if ! grep -q "android:host=\"$host\"" android/app/src/main/AndroidManifest.xml; then
             echo "::error file=android/app/src/main/AndroidManifest.xml::deep-link <data android:host> does not contain app.host=$host. Did you run dart run tool/configure.dart?"
             exit 1
