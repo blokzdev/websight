@@ -39,16 +39,31 @@ distributed as a fork-the-template starter, not a runtime.
 
 ## Workflow: clone → ship
 
-The condensed flow is below; the canonical end-to-end guide
+**Fast path (recommended):**
+
+```bash
+git clone <this-repo> my-app && cd my-app
+flutter pub get
+dart run tool/init.dart        # interactive wizard — rich TUI or plain prompts
+```
+
+The wizard walks identity / theme / disclaimer / features / splash;
+writes `assets/webview_config.yaml`; runs the propagator; offers icons,
+native splash, `flutterfire configure`, keystore generation, and a
+smoke build. Re-runnable.
+
+The condensed manual flow is below; the canonical end-to-end guide
 (toolchain, identity, icons, splash, Firebase, AdMob, signing, Play
 Console, trademark/ToS guidance) lives in
 **[docs/WHITELABEL.md](./docs/WHITELABEL.md)**. Drop-in starter configs
-live in [examples/](./examples/).
+live in [examples/](./examples/). Run `dart run tool/doctor.dart` any
+time to survey project state.
 
 ### 1. Fork or clone
 
 Each app you ship is an independent fork. Duplicate the `websight`
-folder for each project.
+folder for each project. (Or use GitHub's "Use this template" button
+once the repo has the template flag set.)
 
 ### 2. Install dependencies
 

@@ -388,6 +388,29 @@ legal:
 
 ## Cheat sheet
 
+### Automated (recommended)
+
+```bash
+flutter pub get
+dart run tool/init.dart           # interactive wizard
+dart run tool/doctor.dart         # survey: toolchain + project state
+flutter build appbundle --release
+```
+
+The wizard walks every step (identity, theme, disclaimer, features,
+splash, icons, splash regen, `flutterfire configure`, keystore, smoke).
+Pick rich-TUI or plain mode at the start; pass `--plain` / `--rich` to
+force. Skip steps you've already done with `--skip-firebase`,
+`--skip-keystore`, `--skip-smoke`, `--skip-pub-get`. Every step is
+idempotent — re-runnable.
+
+The doctor reports `OK / WARN / FAIL / INFO` for each of: Flutter,
+JDK 17, project identity, Firebase wiring, launcher icon, splash
+image, signing, AdMob App ID (test vs real), deep-link host vs YAML,
+template placeholders left over.
+
+### Manual (when you want full control)
+
 ```bash
 # 1. Identity
 $EDITOR assets/webview_config.yaml          # set app: block
@@ -418,3 +441,17 @@ flutter build appbundle --release
 If something breaks during `flutter analyze` / `flutter test` /
 `flutter build`, paste the output and the maintainers (or your AI
 co-pilot) can usually point at the line in seconds.
+
+---
+
+## Maintainer note: GitHub template flag
+
+This project is designed to be cloned per-app. To make that one-click
+on GitHub, a maintainer with admin access on `blokzdev/websight` should
+flip the **template repository** flag once:
+
+> Settings → General → Repository: tick **"Template repository"** → Save.
+
+Then a "Use this template" button appears on the repo page. Users get
+a fresh repo with no fork ancestry, which is the right starting point
+for a forked app. No effect on contributors who clone normally.

@@ -147,6 +147,21 @@ The list below is what is actually in the repo and what is next.
   first-launch unofficial-app disclaimers. Acceptance is hash-keyed
   on the body text so edits re-prompt automatically.
 
+### ✅ Setup automation (landed)
+
+- `dart run tool/init.dart` — interactive wizard with rich TUI
+  (mason_logger) and plain-prompt modes; user picks at start. Writes
+  the YAML, runs the propagator, offers icons / splash / Firebase /
+  keystore / smoke. Resumable.
+- `dart run tool/doctor.dart` — pass/warn/fail report covering
+  toolchain (Flutter, JDK 17), project identity, Firebase wiring,
+  launcher icon, splash image, signing, AdMob App ID (test vs real),
+  deep-link host vs YAML, leftover placeholders. Exits 1 on hard
+  fail so it can gate CI.
+- `tool/init/` directory split for SRP: prompter.dart (interface +
+  plain + rich impls), runner.dart (step orchestration), init.dart
+  (CLI wrapper).
+
 ### 🟡 Remaining for v1
 
 - **Server-side IAP receipt validation reference**: not in scope for v1.

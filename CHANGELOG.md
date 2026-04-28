@@ -7,6 +7,34 @@ follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 ## [Unreleased]
 
 ### Added
+- **Setup wizard** — `dart run tool/init.dart`. Walks identity, theme,
+  disclaimer, features, splash; writes `assets/webview_config.yaml`;
+  runs the propagator; offers icons, native splash, `flutterfire
+  configure`, keystore generation, and a smoke build. Two modes:
+  rich TUI (mason_logger — colors, spinners) or plain prompts (works
+  in CI logs / dumb terminals / Windows cmd). User picks at start;
+  `--plain` and `--rich` flags force. `--skip-firebase`,
+  `--skip-keystore`, `--skip-smoke`, `--skip-pub-get` for resumed
+  runs. SRP split: `tool/init/prompter.dart` (Prompter +
+  PlainPrompter + RichPrompter), `tool/init/runner.dart` (step
+  orchestration), `tool/init.dart` (CLI wrapper, mode picker).
+- **Project doctor** — `dart run tool/doctor.dart`. Surveys
+  toolchain (Flutter, JDK 17), project identity (custom host /
+  applicationId), Firebase wiring (placeholder vs real), launcher
+  icon, splash image, signing, AdMob App ID (test vs real),
+  deep-link host vs YAML, leftover template placeholders. Each
+  result carries an actionable fix-it command. Exits 1 on any hard
+  fail so you can wire it as a CI step.
+- **Wizard validators** in `tool/init_lib.dart` —
+  validateHost / validateHomeUrl / validateApplicationId /
+  validateAdmobAppId (rejects unit-id-shaped values) /
+  validateVersion / validateHexColor — plus
+  `looksThirdParty(host)` heuristic that defaults the disclaimer
+  prompt ON for well-known public sites.
+- **README + WHITELABEL** updates point the fast path at
+  `dart run tool/init.dart`; the manual cheat sheet remains for
+  full-control users. Maintainer note in WHITELABEL covers the
+  GitHub "Template repository" flag.
 - **Whitelabel guide** (`docs/WHITELABEL.md`) — end-to-end recipe for
   taking the template, pointing it at any web app's domain, and
   shipping a signed AAB to Play. Covers toolchain prereqs, identity,
