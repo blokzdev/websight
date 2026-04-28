@@ -7,10 +7,9 @@ import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:url_launcher/url_launcher.dart';
-import 'package:webview_flutter/webview_flutter.dart';
-
 import 'package:websight/config/webview_config.dart';
 import 'package:websight/shell/route_paths.dart';
+import 'package:webview_flutter/webview_flutter.dart';
 
 /// Stable error codes returned to the JS bridge layer. Mirrors the codes used
 /// on the Kotlin side (see `MainActivity.kt`).
@@ -249,8 +248,9 @@ class JsBridge {
     } on PlatformException catch (e) {
       await _rejectCallback(callbackId, e.code, e.message ?? 'Platform error');
     } catch (e, st) {
-      if (kDebugMode)
+      if (kDebugMode) {
         debugPrint('JsBridge dispatch failed for $method: $e\n$st');
+      }
       await _rejectCallback(callbackId, BridgeErrorCodes.internal, '$e');
     }
   }

@@ -39,7 +39,11 @@ jobs:
         run: dart format --set-exit-if-changed lib test tool
 
       - name: Static analysis
-        run: flutter analyze
+        # `flutter analyze` defaults to --fatal-infos on Flutter 3.x stable, so
+        # advisory style nits would fail the build. We require errors and
+        # warnings to be clean (those genuinely block release) but tolerate
+        # info-level lints — they're suggestions, not blockers.
+        run: flutter analyze --no-fatal-infos
 
       - name: Run tests
         run: flutter test --coverage

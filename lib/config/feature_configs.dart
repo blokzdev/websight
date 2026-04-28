@@ -4,6 +4,7 @@
 /// build_runner regeneration burden every time we add a new feature. Each
 /// controller calls the matching `fromMap` constructor against the raw decoded
 /// YAML map exposed by `WebSightConfig.raw`.
+library;
 
 import 'package:flutter/foundation.dart';
 

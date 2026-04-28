@@ -5,12 +5,11 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:url_launcher/url_launcher.dart';
-import 'package:webview_flutter/webview_flutter.dart';
-import 'package:webview_flutter_android/webview_flutter_android.dart';
-
 import 'package:websight/bridge/js_bridge.dart';
 import 'package:websight/config/feature_configs.dart';
 import 'package:websight/config/webview_config.dart';
+import 'package:webview_flutter/webview_flutter.dart';
+import 'package:webview_flutter_android/webview_flutter_android.dart';
 
 /// Owns the platform [WebViewController] and the lifecycle around it for a
 /// single route. Exposes high-level state (loading, error, current URL) to

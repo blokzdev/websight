@@ -94,7 +94,7 @@ void _printSummary(
       '  app.admob_app_id      = ${i.admobAppId ?? "(unset — manifest untouched)"}');
   stdout.writeln(
       '  app.version           = ${i.version ?? "(unset — pubspec untouched)"}');
-  stdout.writeln('');
+  stdout.writeln();
   if (changed.isNotEmpty) {
     stdout.writeln('${mode}Changed:');
     for (final p in changed) {
@@ -113,7 +113,7 @@ void _printSummary(
       stderr.writeln('  ✗ $p');
     }
   }
-  stdout.writeln('');
+  stdout.writeln();
   stdout.writeln('Next steps:');
   stdout.writeln('  1. Drop your launcher icon at assets/launcher/icon.png');
   stdout.writeln('     (icon.kitchen is a good visual generator), then:');
@@ -127,6 +127,6 @@ void _printSummary(
       .writeln('     script — otherwise it will overwrite the applicationId.');
   stdout.writeln(
       '  4. `flutter pub get && flutter build apk --debug` to verify.');
-  stdout.writeln('');
+  stdout.writeln();
   stdout.writeln('See docs/WHITELABEL.md for the full end-to-end guide.');
 }

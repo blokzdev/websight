@@ -70,7 +70,6 @@ class BillingController extends ChangeNotifier {
         e,
         st,
         reason: 'BillingController.$where',
-        fatal: false,
       );
     } catch (_) {
       // ignore: Crashlytics not configured / Firebase not initialized

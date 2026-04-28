@@ -1,8 +1,9 @@
+import 'dart:convert';
+
 import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart' show rootBundle;
 import 'package:json_annotation/json_annotation.dart';
 import 'package:yaml/yaml.dart';
-import 'dart:convert';
 
 part 'webview_config.g.dart';
 
@@ -75,7 +76,7 @@ class WebSightConfig {
   factory WebSightConfig.fallback() {
     return WebSightConfig(
       app:
-          AppConfig(host: '', homeUrl: 'about:blank', name: "WebSight (Error)"),
+          AppConfig(host: '', homeUrl: 'about:blank', name: 'WebSight (Error)'),
       flutterUi: FlutterUiConfig(
         theme: ThemeConfig(
             brightness: 'light', primary: '#0000FF', useMaterial3: true),
@@ -100,8 +101,7 @@ class WebSightConfig {
       ads: AdsConfig(
           enabled: false,
           consentGateWithUmp: false,
-          placements:
-              AdPlacements(globalBanner: null, routePlacements: const {})),
+          placements: AdPlacements(routePlacements: const {})),
       behaviorOverrides: BehaviorOverridesConfig(
           backButton: BackButtonConfig(confirmBeforeExit: true)),
       updates: UpdateConfig(inAppUpdates: 'none'),

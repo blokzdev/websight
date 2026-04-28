@@ -33,11 +33,7 @@ class FcmController extends ChangeNotifier {
     if (_initialized || _disposed || !config.notifications.fcmEnabled) return;
     try {
       final messaging = FirebaseMessaging.instance;
-      await messaging.requestPermission(
-        alert: true,
-        badge: true,
-        sound: true,
-      );
+      await messaging.requestPermission();
       if (_disposed) return; // disposed mid-await
       _token = await messaging.getToken();
 

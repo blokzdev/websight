@@ -118,7 +118,7 @@ void main() {
     });
   });
 
-  WizardAnswers _answers({
+  WizardAnswers answers({
     String name = 'Demo',
     String host = 'example.com',
     String? admobAppId,
@@ -149,14 +149,14 @@ void main() {
 
   group('renderWebViewConfigYaml', () {
     test('writes identity into app: block', () {
-      final out = renderWebViewConfigYaml(_answers(host: 'shop.example.com'));
+      final out = renderWebViewConfigYaml(answers(host: 'shop.example.com'));
       expect(out, contains('host: "shop.example.com"'));
       expect(out, contains('application_id: "com.example.demo"'));
       expect(out, contains('home_url: "https://shop.example.com/"'));
     });
 
     test('comments out admob_app_id when not provided', () {
-      final out = renderWebViewConfigYaml(_answers());
+      final out = renderWebViewConfigYaml(answers());
       expect(out, contains('# admob_app_id:'));
       // No uncommented admob_app_id line. The placeholder comment line
       // contains the substring "admob_app_id: \"ca-app-pub" by design,
@@ -168,7 +168,7 @@ void main() {
     });
 
     test('writes admob_app_id when provided', () {
-      final out = renderWebViewConfigYaml(_answers(
+      final out = renderWebViewConfigYaml(answers(
         admobAppId: 'ca-app-pub-1234567890123456~1234567890',
       ));
       expect(
@@ -179,7 +179,7 @@ void main() {
 
     test('disclaimer body indents into YAML literal block', () {
       final out = renderWebViewConfigYaml(
-        _answers(disclaimerEnabled: true),
+        answers(disclaimerEnabled: true),
       );
       expect(out, contains('enabled: true'));
       expect(out, contains('      Disclaimer body line 1.'));
@@ -187,7 +187,7 @@ void main() {
     });
 
     test('propagates host into navigation/security blocks', () {
-      final out = renderWebViewConfigYaml(_answers(host: 'shop.example.com'));
+      final out = renderWebViewConfigYaml(answers(host: 'shop.example.com'));
       // restrict_to_hosts and deep_links.hosts should both list the host.
       final occurrences = RegExp('shop\\.example\\.com').allMatches(out).length;
       expect(occurrences, greaterThanOrEqualTo(4));
@@ -195,11 +195,11 @@ void main() {
 
     test('ads.enabled mirrors the answer', () {
       expect(
-        renderWebViewConfigYaml(_answers(adsEnabled: false)),
+        renderWebViewConfigYaml(answers()),
         contains('enabled: false'),
       );
       expect(
-        renderWebViewConfigYaml(_answers(adsEnabled: true)),
+        renderWebViewConfigYaml(answers(adsEnabled: true)),
         contains('enabled: true'),
       );
     });

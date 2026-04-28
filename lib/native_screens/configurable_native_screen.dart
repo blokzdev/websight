@@ -87,7 +87,7 @@ class _NativeSettingsPage extends StatelessWidget {
     return ListView(
       padding: const EdgeInsets.symmetric(vertical: 8),
       children: [
-        _Section(title: 'App'),
+        const _Section(title: 'App'),
         _InfoTile(
           icon: Icons.info_outline,
           label: 'Name',
@@ -105,7 +105,7 @@ class _NativeSettingsPage extends StatelessWidget {
               '${config.flutterUi.theme.brightness} · primary ${config.flutterUi.theme.primary}',
         ),
         const SizedBox(height: 8),
-        _Section(title: 'Notifications'),
+        const _Section(title: 'Notifications'),
         _InfoTile(
           icon: Icons.notifications_outlined,
           label: 'Permission prompt',
@@ -125,7 +125,7 @@ class _NativeSettingsPage extends StatelessWidget {
               : 'Disabled',
         ),
         const SizedBox(height: 8),
-        _Section(title: 'Privacy & monetization'),
+        const _Section(title: 'Privacy & monetization'),
         _InfoTile(
           icon: Icons.analytics_outlined,
           label: 'Analytics',
@@ -147,7 +147,7 @@ class _NativeSettingsPage extends StatelessWidget {
         ),
         if (_visibleLinks(config).isNotEmpty) ...[
           const SizedBox(height: 8),
-          _Section(title: 'Links'),
+          const _Section(title: 'Links'),
           for (final r in _visibleLinks(config))
             ListTile(
               leading: Icon(iconForString(r.icon ?? _defaultLinkIcon(r.path))),
@@ -157,7 +157,7 @@ class _NativeSettingsPage extends StatelessWidget {
             ),
         ],
         const SizedBox(height: 8),
-        _Section(title: 'About'),
+        const _Section(title: 'About'),
         ListTile(
           leading: const Icon(Icons.thumb_up_off_alt),
           title: const Text('Rate this app'),

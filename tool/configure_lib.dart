@@ -104,7 +104,7 @@ class RegexOp extends Op {
   String transform(String input) {
     var out = input;
     for (final s in swaps) {
-      out = out.replaceAllMapped(s.pattern, (m) => s.replacement(m));
+      out = out.replaceAllMapped(s.pattern, s.replacement);
     }
     return out;
   }

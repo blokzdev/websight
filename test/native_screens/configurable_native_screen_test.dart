@@ -10,7 +10,7 @@ void main() {
   // A minimal config sufficient to render either variant. We deliberately
   // avoid touching the json_serializable model so these tests don't depend on
   // build_runner output being current.
-  WebSightConfig _config(
+  WebSightConfig config0(
       {String name = 'WebSightDemo', String host = 'flutter.dev'}) {
     return WebSightConfig(
       app: AppConfig(host: host, homeUrl: 'https://$host', name: name),
@@ -63,7 +63,6 @@ void main() {
         enabled: false,
         consentGateWithUmp: false,
         placements: AdPlacements(
-          globalBanner: null,
           routePlacements: const <String, AdPlacementConfig>{},
         ),
       ),
@@ -79,7 +78,7 @@ void main() {
     );
   }
 
-  Widget _harness({
+  Widget harness({
     required Widget child,
     required WebSightConfig config,
   }) {
@@ -109,10 +108,10 @@ void main() {
     addTearDown(tester.view.resetPhysicalSize);
     addTearDown(tester.view.resetDevicePixelRatio);
 
-    final config = _config(name: 'MyShop', host: 'shop.example.com');
+    final config = config0(name: 'MyShop', host: 'shop.example.com');
     final route = config.routes.first; // /native/settings
 
-    await tester.pumpWidget(_harness(
+    await tester.pumpWidget(harness(
       config: config,
       child: ConfigurableNativeScreen(route: route),
     ));
@@ -124,7 +123,7 @@ void main() {
   });
 
   testWidgets('placeholder variant labels the route path', (tester) async {
-    final config = _config();
+    final config = config0();
     final route = RouteConfig(
       path: '/native/watchlist',
       kind: 'native',
@@ -134,7 +133,7 @@ void main() {
       appbarVisible: true,
     );
 
-    await tester.pumpWidget(_harness(
+    await tester.pumpWidget(harness(
       config: config,
       child: ConfigurableNativeScreen(route: route),
     ));

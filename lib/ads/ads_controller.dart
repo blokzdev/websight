@@ -100,7 +100,7 @@ class AdsController extends ChangeNotifier {
   }
 
   AdPlacementConfig? _findPlacementForRoute(String routePath) {
-    for (var entry in config.ads.placements.routePlacements.entries) {
+    for (final entry in config.ads.placements.routePlacements.entries) {
       if (entry.value.route == routePath) {
         return entry.value;
       }

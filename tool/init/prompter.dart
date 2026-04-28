@@ -154,7 +154,7 @@ class PlainPrompter extends Prompter {
 
   @override
   void section(String title) {
-    _out.writeln('');
+    _out.writeln();
     _out.writeln('== $title ==');
   }
 

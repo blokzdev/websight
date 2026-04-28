@@ -25,7 +25,7 @@ Future<void> main(List<String> args) async {
   final fails = results.where((r) => r.isHardFail).length;
   final warns = results.where((r) => r.status == DoctorStatus.warn).length;
 
-  stdout.writeln('');
+  stdout.writeln();
   stdout.writeln('Summary: '
       '${results.length - fails - warns} ok, $warns warn, $fails fail');
   exit(fails == 0 ? 0 : 1);

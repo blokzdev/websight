@@ -22,11 +22,11 @@ class DefaultFirebaseOptions {
       case TargetPlatform.android:
         // Replace these with your actual Firebase project details.
         return const FirebaseOptions(
-          apiKey: "YOUR_API_KEY",
-          appId: "YOUR_APP_ID",
-          messagingSenderId: "YOUR_SENDER_ID",
-          projectId: "YOUR_PROJECT_ID",
-          storageBucket: "YOUR_STORAGE_BUCKET",
+          apiKey: 'YOUR_API_KEY',
+          appId: 'YOUR_APP_ID',
+          messagingSenderId: 'YOUR_SENDER_ID',
+          projectId: 'YOUR_PROJECT_ID',
+          storageBucket: 'YOUR_STORAGE_BUCKET',
         );
       case TargetPlatform.iOS:
         throw UnsupportedError(

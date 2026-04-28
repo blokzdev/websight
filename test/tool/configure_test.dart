@@ -201,8 +201,7 @@ version: 1.0.0+1
 ''';
 
     test('snake-cases display name and rewrites version when provided', () {
-      final out = pubspecOp(sample(name: 'My Shop', version: '2.0.0+5'))
-          .transform(before);
+      final out = pubspecOp(sample(version: '2.0.0+5')).transform(before);
       expect(out, contains('name: my_shop'));
       expect(out, contains('version: 2.0.0+5'));
     });
