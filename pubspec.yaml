@@ -44,6 +44,7 @@ dev_dependencies:
   flutter_test:
     sdk: flutter
   json_serializable: ^6.7.1
+  mason_logger: ^0.3.0       # used by tool/init.dart for the rich TUI mode
 
 flutter:
   uses-material-design: true
