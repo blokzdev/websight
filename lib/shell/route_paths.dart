@@ -24,9 +24,13 @@ String yamlPathToGoRouter(String path) {
 String stripParameterizedTail(String path) {
   final i = path.indexOf(':');
   if (i < 0) return path;
-  final base = path.substring(0, i).trimRight();
+  // Trim a trailing '/' off the prefix before the parameter. If the prefix
+  // is empty or just '/' (i.e. the very first segment is the parameter),
+  // there is no useful static prefix to land on — return the original.
+  var base = path.substring(0, i);
+  if (base.endsWith('/')) base = base.substring(0, base.length - 1);
   if (base.isEmpty) return path;
-  return base.endsWith('/') ? base.substring(0, base.length - 1) : base;
+  return base;
 }
 
 /// True when [path] matches [pattern], treating `:name` segments as

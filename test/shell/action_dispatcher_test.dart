@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+import 'package:flutter/material.dart' hide ActionDispatcher;
 import 'package:flutter_test/flutter_test.dart';
 import 'package:websight/shell/action_dispatcher.dart';
 

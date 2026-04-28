@@ -100,6 +100,15 @@ void main() {
 
   testWidgets('settings variant shows app name and host from config',
       (tester) async {
+    // The settings page renders many tiles in a ListView; the default
+    // 800x600 test viewport doesn't fit all of them and ListView lazily
+    // builds children, so off-screen tiles (Privacy, Rate this app, etc.)
+    // never enter the widget tree. Pump a tall viewport instead.
+    tester.view.physicalSize = const Size(800, 2400);
+    tester.view.devicePixelRatio = 1.0;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+
     final config = _config(name: 'MyShop', host: 'shop.example.com');
     final route = config.routes.first; // /native/settings
 

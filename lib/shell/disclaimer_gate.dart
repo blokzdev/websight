@@ -4,7 +4,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 
-import 'package:websight/config/feature_configs.dart';
 import 'package:websight/lifecycle/disclaimer_controller.dart';
 
 /// Wraps [child] with a first-launch unofficial-app disclaimer when

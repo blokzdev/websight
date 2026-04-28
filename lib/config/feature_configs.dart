@@ -300,7 +300,7 @@ class BottomTabsFeature {
     final rawItems = map['items'];
     final items = (rawItems is List)
         ? rawItems
-            .whereType<Map>()
+            .whereType<Map<dynamic, dynamic>>()
             .map((e) => TabItem.fromMap(Map<String, dynamic>.from(e)))
             .where((t) => t.route.isNotEmpty)
             .toList(growable: false)
@@ -380,7 +380,7 @@ class DrawerFeature {
   static List<DrawerItem> _items(Object? raw) {
     if (raw is! List) return const <DrawerItem>[];
     return raw
-        .whereType<Map>()
+        .whereType<Map<dynamic, dynamic>>()
         .map((m) => DrawerItem.fromMap(Map<String, dynamic>.from(m)))
         .where((i) => i.title.isNotEmpty)
         .toList(growable: false);

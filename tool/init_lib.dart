@@ -380,7 +380,9 @@ String patchPubspecForLaunchAssets(
   var out = pubspec;
 
   if (launcherIconPath != null) {
-    if (!out.contains('flutter_launcher_icons:')) {
+    // Detect a top-level (line-start) `flutter_launcher_icons:` block, not
+    // the indented dev-dependency line of the same name.
+    if (!RegExp(r'^flutter_launcher_icons:', multiLine: true).hasMatch(out)) {
       out += '\n\nflutter_launcher_icons:\n'
           '  android: "ic_launcher"\n'
           '  ios: false\n'
@@ -392,7 +394,7 @@ String patchPubspecForLaunchAssets(
   }
 
   if (splashEnabled) {
-    if (!out.contains('flutter_native_splash:')) {
+    if (!RegExp(r'^flutter_native_splash:', multiLine: true).hasMatch(out)) {
       final imageLine = splashImageAsset == null
           ? '  # image: assets/splash/logo.png'
           : '  image: $splashImageAsset';

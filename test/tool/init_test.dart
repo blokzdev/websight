@@ -158,7 +158,13 @@ void main() {
     test('comments out admob_app_id when not provided', () {
       final out = renderWebViewConfigYaml(_answers());
       expect(out, contains('# admob_app_id:'));
-      expect(out, isNot(contains('admob_app_id: "ca-app-pub')));
+      // No uncommented admob_app_id line. The placeholder comment line
+      // contains the substring "admob_app_id: \"ca-app-pub" by design,
+      // so we anchor on indentation to ensure no active assignment.
+      expect(
+        RegExp(r'^  admob_app_id:', multiLine: true).hasMatch(out),
+        isFalse,
+      );
     });
 
     test('writes admob_app_id when provided', () {
@@ -214,9 +220,19 @@ void main() {
         splashBg: '#0B0B0C',
         splashImageAsset: null,
       );
-      expect(out, contains('flutter_launcher_icons:'));
+      // Top-level launcher block was appended; no top-level splash block
+      // (the indented dev-dep line for flutter_native_splash is NOT a
+      // top-level block — that's exactly what the impl's line-anchored
+      // regex distinguishes).
+      expect(
+        RegExp(r'^flutter_launcher_icons:', multiLine: true).hasMatch(out),
+        isTrue,
+      );
       expect(out, contains('image_path: "assets/launcher/icon.png"'));
-      expect(out, isNot(contains('flutter_native_splash:')));
+      expect(
+        RegExp(r'^flutter_native_splash:', multiLine: true).hasMatch(out),
+        isFalse,
+      );
     });
 
     test('appends splash block when splash enabled', () {
@@ -227,7 +243,10 @@ void main() {
         splashBg: '#0B0B0C',
         splashImageAsset: 'assets/splash/logo.png',
       );
-      expect(out, contains('flutter_native_splash:'));
+      expect(
+        RegExp(r'^flutter_native_splash:', multiLine: true).hasMatch(out),
+        isTrue,
+      );
       expect(out, contains('color: "#0B0B0C"'));
       expect(out, contains('image: assets/splash/logo.png'));
     });
@@ -247,12 +266,19 @@ void main() {
         splashBg: '#0B0B0C',
         splashImageAsset: null,
       );
+      // Count only top-level (line-start) blocks, not dev-dep lines that
+      // share the same name. After two patches each top-level block must
+      // appear exactly once.
       expect(
-        RegExp(RegExp.escape('flutter_launcher_icons:')).allMatches(out).length,
+        RegExp(r'^flutter_launcher_icons:', multiLine: true)
+            .allMatches(out)
+            .length,
         1,
       );
       expect(
-        RegExp(RegExp.escape('flutter_native_splash:')).allMatches(out).length,
+        RegExp(r'^flutter_native_splash:', multiLine: true)
+            .allMatches(out)
+            .length,
         1,
       );
     });

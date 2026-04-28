@@ -56,7 +56,7 @@ abstract class Prompter {
   void close() {}
 }
 
-class PlainPrompter implements Prompter {
+class PlainPrompter extends Prompter {
   PlainPrompter({this.stdin_, this.stdout_});
 
   final Stdin? stdin_;
@@ -167,7 +167,7 @@ class PlainPrompter implements Prompter {
   }
 }
 
-class RichPrompter implements Prompter {
+class RichPrompter extends Prompter {
   RichPrompter() : _logger = Logger();
 
   final Logger _logger;
