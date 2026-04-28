@@ -17,7 +17,7 @@ val keystoreProperties = Properties().apply {
 
 android {
     namespace = "com.app.websight"
-    compileSdk = 34
+    compileSdk = 36
     ndkVersion = flutter.ndkVersion
 
     compileOptions {
@@ -39,7 +39,7 @@ android {
         // CRITICAL: change this to your unique application id before publishing.
         applicationId = "com.app.websight"
         minSdk = 24
-        targetSdk = 34
+        targetSdk = 36
         versionCode = flutter.versionCode
         versionName = flutter.versionName
         multiDexEnabled = true

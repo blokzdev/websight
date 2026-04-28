@@ -35,7 +35,7 @@ distributed as a fork-the-template starter, not a runtime.
   `MobileAds.initialize()`; deny-by-default backups; HTTPS-only network
   security config; Android 13+ runtime notification permission.
 - **Production gradle**: ProGuard/R8 rules, optional release signing,
-  multidex, `compileSdk = 34`, `minSdk = 24`.
+  multidex, `compileSdk = 36`, `minSdk = 24`.
 
 ## Workflow: clone → ship
 

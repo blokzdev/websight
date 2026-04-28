@@ -113,7 +113,7 @@ app:
     const before = '''
 android {
     namespace = "com.app.websight"
-    compileSdk = 34
+    compileSdk = 36
 
     defaultConfig {
         applicationId = "com.app.websight"

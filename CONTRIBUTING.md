@@ -16,7 +16,7 @@ dart run build_runner build --delete-conflicting-outputs
 You'll need:
 - Flutter stable (current minimum: see `pubspec.yaml` `environment.sdk`)
 - JDK 17
-- Android SDK with Build-Tools matching `compileSdk = 34`
+- Android SDK with Build-Tools matching `compileSdk = 36`
 
 ## Branches
 
