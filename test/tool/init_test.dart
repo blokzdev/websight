@@ -183,8 +183,7 @@ void main() {
     test('propagates host into navigation/security blocks', () {
       final out = renderWebViewConfigYaml(_answers(host: 'shop.example.com'));
       // restrict_to_hosts and deep_links.hosts should both list the host.
-      final occurrences =
-          RegExp('shop\\.example\\.com').allMatches(out).length;
+      final occurrences = RegExp('shop\\.example\\.com').allMatches(out).length;
       expect(occurrences, greaterThanOrEqualTo(4));
     });
 

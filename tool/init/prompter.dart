@@ -72,8 +72,9 @@ class PlainPrompter implements Prompter {
     String? Function(String)? validator,
   }) {
     while (true) {
-      final defaultPart =
-          (defaultValue == null || defaultValue.isEmpty) ? '' : ' [$defaultValue]';
+      final defaultPart = (defaultValue == null || defaultValue.isEmpty)
+          ? ''
+          : ' [$defaultValue]';
       _out.write('$label$defaultPart: ');
       final raw = _in.readLineSync()?.trim() ?? '';
       final value = raw.isEmpty ? (defaultValue ?? '') : raw;
@@ -178,10 +179,12 @@ class RichPrompter implements Prompter {
     String? Function(String)? validator,
   }) {
     while (true) {
-      final raw = _logger.prompt(
-        label,
-        defaultValue: defaultValue,
-      ).trim();
+      final raw = _logger
+          .prompt(
+            label,
+            defaultValue: defaultValue,
+          )
+          .trim();
       final value = raw.isEmpty ? (defaultValue ?? '') : raw;
       final err = validator?.call(value);
       if (err == null) return value;

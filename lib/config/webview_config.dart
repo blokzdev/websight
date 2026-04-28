@@ -74,7 +74,8 @@ class WebSightConfig {
 
   factory WebSightConfig.fallback() {
     return WebSightConfig(
-      app: AppConfig(host: '', homeUrl: 'about:blank', name: "WebSight (Error)"),
+      app:
+          AppConfig(host: '', homeUrl: 'about:blank', name: "WebSight (Error)"),
       flutterUi: FlutterUiConfig(
         theme: ThemeConfig(
             brightness: 'light', primary: '#0000FF', useMaterial3: true),
@@ -106,8 +107,8 @@ class WebSightConfig {
       updates: UpdateConfig(inAppUpdates: 'none'),
       analyticsCrash:
           AnalyticsCrashConfig(analytics: false, crashlytics: false),
-      notifications:
-          NotificationsConfig(postNotificationsPermission: false, fcmEnabled: false),
+      notifications: NotificationsConfig(
+          postNotificationsPermission: false, fcmEnabled: false),
     );
   }
 }

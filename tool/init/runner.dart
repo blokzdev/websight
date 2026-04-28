@@ -131,17 +131,15 @@ WizardAnswers _collectAnswers(Prompter p) {
     'Wrapping a third-party site? Enable the unofficial-app disclaimer dialog?',
     defaultValue: defaultsToOn,
   );
-  final disclaimerBody = disclaimerEnabled
-      ? defaultDisclaimerBody(host: host, name: name)
-      : '';
+  final disclaimerBody =
+      disclaimerEnabled ? defaultDisclaimerBody(host: host, name: name) : '';
 
   // Features
   final adsEnabled = admobAppId.isNotEmpty &&
       p.confirm('Enable AdMob banner ads now?', defaultValue: false);
   final fcmEnabled =
       p.confirm('Enable Firebase Cloud Messaging (push)?', defaultValue: false);
-  final iapEnabled =
-      p.confirm('Enable in-app purchases?', defaultValue: false);
+  final iapEnabled = p.confirm('Enable in-app purchases?', defaultValue: false);
   final fileUploadsEnabled = p.confirm(
     'Enable file uploads from <input type=file>?',
     defaultValue: false,
@@ -220,8 +218,9 @@ Future<void> _writeYamlAndPropagate(
   yaml.writeAsStringSync(renderWebViewConfigYaml(a));
   p.success('Wrote ${yaml.path}');
 
-  await p.progress('Propagating identity to gradle / manifest / strings / pubspec',
-      () async {
+  await p
+      .progress('Propagating identity to gradle / manifest / strings / pubspec',
+          () async {
     final identity = wizardAnswersToIdentity(a);
     identity.validate();
     final ops = <Op>[
@@ -393,14 +392,22 @@ Future<void> _maybeGenerateKeystore(Prompter p, WizardOptions opts) async {
       [
         '-genkey',
         '-v',
-        '-keystore', storeFile,
-        '-keyalg', 'RSA',
-        '-keysize', '2048',
-        '-validity', '10000',
-        '-alias', alias,
-        '-storepass', storePassword,
-        '-keypass', keyPassword,
-        '-dname', 'CN=Android Debug,O=Android,C=US',
+        '-keystore',
+        storeFile,
+        '-keyalg',
+        'RSA',
+        '-keysize',
+        '2048',
+        '-validity',
+        '10000',
+        '-alias',
+        alias,
+        '-storepass',
+        storePassword,
+        '-keypass',
+        keyPassword,
+        '-dname',
+        'CN=Android Debug,O=Android,C=US',
       ],
       runInShell: true,
     );
@@ -423,7 +430,8 @@ Future<void> _maybeRunSmoke(Prompter p, WizardOptions opts) async {
   if (!opts.skipPubGet) {
     if (p.confirm('Run flutter pub get?', defaultValue: true)) {
       await p.progress('flutter pub get', () async {
-        final r = await Process.run('flutter', ['pub', 'get'], runInShell: true);
+        final r =
+            await Process.run('flutter', ['pub', 'get'], runInShell: true);
         if (r.exitCode != 0) throw _SubprocessFailure('flutter pub get', r);
       });
     }

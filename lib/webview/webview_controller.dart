@@ -109,14 +109,11 @@ class WebsightWebViewController extends ChangeNotifier {
   /// strings the plugin hands back to the WebView.
   Future<List<String>> _onShowFileSelector(FileSelectorParams params) async {
     if (!features.fileUploads.enabled) return const <String>[];
-    final allowMultiple =
-        params.mode == FileSelectorMode.openMultiple;
-    final acceptTypes = params.acceptTypes
-        .where((t) => t.isNotEmpty)
-        .toList(growable: false);
-    final mimeTypes = acceptTypes.isEmpty
-        ? features.fileUploads.mimeTypes
-        : acceptTypes;
+    final allowMultiple = params.mode == FileSelectorMode.openMultiple;
+    final acceptTypes =
+        params.acceptTypes.where((t) => t.isNotEmpty).toList(growable: false);
+    final mimeTypes =
+        acceptTypes.isEmpty ? features.fileUploads.mimeTypes : acceptTypes;
     try {
       final result = await _platformChannel.invokeMethod<List<dynamic>>(
         'pickFiles',
@@ -162,7 +159,8 @@ class WebsightWebViewController extends ChangeNotifier {
     if (controller.platform is AndroidWebViewController) {
       final android = controller.platform as AndroidWebViewController;
       final current = await android.getUserAgent() ?? '';
-      await controller.setUserAgent('${current.trim()} ${suffix.trim()}'.trim());
+      await controller
+          .setUserAgent('${current.trim()} ${suffix.trim()}'.trim());
     }
   }
 
@@ -246,7 +244,8 @@ class WebsightWebViewController extends ChangeNotifier {
     // page renders rather than the generic error UI.
     final code = error.errorCode;
     final type = error.errorType?.name ?? '';
-    _isOffline = type.contains('host') || type.contains('connect') ||
+    _isOffline = type.contains('host') ||
+        type.contains('connect') ||
         code == -2 /* ERROR_HOST_LOOKUP */ ||
         code == -6 /* ERROR_CONNECT */ ||
         code == -7 /* ERROR_TIMEOUT */;
@@ -269,13 +268,15 @@ class WebsightWebViewController extends ChangeNotifier {
     }
 
     if (config.navigation.externalAllowlist.contains(host) ||
-        const ['tel', 'mailto', 'geo', 'intent', 'market'].contains(uri.scheme)) {
+        const ['tel', 'mailto', 'geo', 'intent', 'market']
+            .contains(uri.scheme)) {
       await _launchExternal(uri);
       return NavigationDecision.prevent;
     }
 
     final currentUrl = await controller.currentUrl();
-    final currentHost = currentUrl != null ? Uri.tryParse(currentUrl)?.host : null;
+    final currentHost =
+        currentUrl != null ? Uri.tryParse(currentUrl)?.host : null;
     if (currentHost != null && host.isNotEmpty && host != currentHost) {
       await _launchExternal(uri);
       return NavigationDecision.prevent;

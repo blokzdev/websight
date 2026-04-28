@@ -88,9 +88,12 @@ void _printSummary(
   stdout.writeln('${mode}WebSight configure');
   stdout.writeln('  app.name              = ${i.name}');
   stdout.writeln('  app.host              = ${i.host}');
-  stdout.writeln('  app.application_id    = ${i.applicationId ?? "(unset — gradle untouched)"}');
-  stdout.writeln('  app.admob_app_id      = ${i.admobAppId ?? "(unset — manifest untouched)"}');
-  stdout.writeln('  app.version           = ${i.version ?? "(unset — pubspec untouched)"}');
+  stdout.writeln(
+      '  app.application_id    = ${i.applicationId ?? "(unset — gradle untouched)"}');
+  stdout.writeln(
+      '  app.admob_app_id      = ${i.admobAppId ?? "(unset — manifest untouched)"}');
+  stdout.writeln(
+      '  app.version           = ${i.version ?? "(unset — pubspec untouched)"}');
   stdout.writeln('');
   if (changed.isNotEmpty) {
     stdout.writeln('${mode}Changed:');
@@ -120,8 +123,10 @@ void _printSummary(
   stdout.writeln('  3. (Optional) `dart run change_app_package_name:main '
       '${i.applicationId ?? "com.yourcompany.yourapp"}` to rename the Kotlin');
   stdout.writeln('     package directory to match. Run BEFORE re-running this');
-  stdout.writeln('     script — otherwise it will overwrite the applicationId.');
-  stdout.writeln('  4. `flutter pub get && flutter build apk --debug` to verify.');
+  stdout
+      .writeln('     script — otherwise it will overwrite the applicationId.');
+  stdout.writeln(
+      '  4. `flutter pub get && flutter build apk --debug` to verify.');
   stdout.writeln('');
   stdout.writeln('See docs/WHITELABEL.md for the full end-to-end guide.');
 }

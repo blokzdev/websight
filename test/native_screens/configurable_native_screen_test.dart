@@ -10,7 +10,8 @@ void main() {
   // A minimal config sufficient to render either variant. We deliberately
   // avoid touching the json_serializable model so these tests don't depend on
   // build_runner output being current.
-  WebSightConfig _config({String name = 'WebSightDemo', String host = 'flutter.dev'}) {
+  WebSightConfig _config(
+      {String name = 'WebSightDemo', String host = 'flutter.dev'}) {
     return WebSightConfig(
       app: AppConfig(host: host, homeUrl: 'https://$host', name: name),
       flutterUi: FlutterUiConfig(
@@ -113,8 +114,7 @@ void main() {
     expect(find.text('Rate this app'), findsOneWidget);
   });
 
-  testWidgets('placeholder variant labels the route path',
-      (tester) async {
+  testWidgets('placeholder variant labels the route path', (tester) async {
     final config = _config();
     final route = RouteConfig(
       path: '/native/watchlist',

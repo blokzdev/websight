@@ -23,9 +23,7 @@ Future<void> main(List<String> args) async {
   }
 
   final fails = results.where((r) => r.isHardFail).length;
-  final warns = results
-      .where((r) => r.status == DoctorStatus.warn)
-      .length;
+  final warns = results.where((r) => r.status == DoctorStatus.warn).length;
 
   stdout.writeln('');
   stdout.writeln('Summary: '

@@ -29,8 +29,8 @@ class ConfigurableNativeScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final isSettings = route.path == '/native/settings' ||
-        route.path.endsWith('/settings');
+    final isSettings =
+        route.path == '/native/settings' || route.path.endsWith('/settings');
     return isSettings
         ? const _NativeSettingsPage()
         : _NativePlaceholderPage(route: route);
@@ -104,7 +104,6 @@ class _NativeSettingsPage extends StatelessWidget {
           value:
               '${config.flutterUi.theme.brightness} · primary ${config.flutterUi.theme.primary}',
         ),
-
         const SizedBox(height: 8),
         _Section(title: 'Notifications'),
         _InfoTile(
@@ -125,7 +124,6 @@ class _NativeSettingsPage extends StatelessWidget {
                   : 'Pending init')
               : 'Disabled',
         ),
-
         const SizedBox(height: 8),
         _Section(title: 'Privacy & monetization'),
         _InfoTile(
@@ -147,20 +145,17 @@ class _NativeSettingsPage extends StatelessWidget {
                   ? 'Enabled, no products configured'
                   : '${features.billing.productIds.length} product(s)',
         ),
-
         if (_visibleLinks(config).isNotEmpty) ...[
           const SizedBox(height: 8),
           _Section(title: 'Links'),
           for (final r in _visibleLinks(config))
             ListTile(
-              leading: Icon(
-                  iconForString(r.icon ?? _defaultLinkIcon(r.path))),
+              leading: Icon(iconForString(r.icon ?? _defaultLinkIcon(r.path))),
               title: Text(r.title),
               trailing: const Icon(Icons.chevron_right),
               onTap: () => context.go(r.path),
             ),
         ],
-
         const SizedBox(height: 8),
         _Section(title: 'About'),
         ListTile(
@@ -189,8 +184,10 @@ class _NativeSettingsPage extends StatelessWidget {
     return config.routes.where((r) {
       if (r.kind != 'webview') return false;
       final p = r.path.toLowerCase();
-      return p.endsWith('/privacy') || p.endsWith('/terms') ||
-          p.endsWith('/legal') || p.endsWith('/about');
+      return p.endsWith('/privacy') ||
+          p.endsWith('/terms') ||
+          p.endsWith('/legal') ||
+          p.endsWith('/about');
     }).toList(growable: false);
   }
 

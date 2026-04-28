@@ -65,8 +65,8 @@ class AppIdentity {
       errors.add('app.host must be a bare host, not a URL (got "$host")');
     }
     if (applicationId != null) {
-      final ok = RegExp(r'^[a-z][a-z0-9_]*(\.[a-z0-9_]+)+$')
-          .hasMatch(applicationId!);
+      final ok =
+          RegExp(r'^[a-z][a-z0-9_]*(\.[a-z0-9_]+)+$').hasMatch(applicationId!);
       if (!ok) {
         errors.add('app.application_id "$applicationId" is not a valid '
             'Android applicationId (lowercase reverse-DNS expected)');
@@ -202,7 +202,5 @@ String pubspecName(String displayName) {
   return cleaned.isEmpty ? 'websight' : cleaned;
 }
 
-String xmlEscape(String s) => s
-    .replaceAll('&', '&amp;')
-    .replaceAll('<', '&lt;')
-    .replaceAll('>', '&gt;');
+String xmlEscape(String s) =>
+    s.replaceAll('&', '&amp;').replaceAll('<', '&lt;').replaceAll('>', '&gt;');

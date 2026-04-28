@@ -74,9 +74,7 @@ class _WebViewScreenState extends State<WebViewScreen> {
     }
     if (s.backTick != _lastBackTick) {
       _lastBackTick = s.backTick;
-      _websightController.controller
-          .canGoBack()
-          .then((canBack) {
+      _websightController.controller.canGoBack().then((canBack) {
         if (canBack) _websightController.controller.goBack();
       });
     }
@@ -99,9 +97,10 @@ class _WebViewScreenState extends State<WebViewScreen> {
         value: _websightController,
         child: Consumer<wc.WebsightWebViewController>(
           builder: (context, controller, _) {
-            final showOffline = controller.isOffline &&
-                _features.errorPages.showOfflinePage;
-            final showError = controller.webError != null && !controller.isOffline;
+            final showOffline =
+                controller.isOffline && _features.errorPages.showOfflinePage;
+            final showError =
+                controller.webError != null && !controller.isOffline;
 
             return RefreshIndicator(
               onRefresh: controller.reload,
@@ -114,8 +113,11 @@ class _WebViewScreenState extends State<WebViewScreen> {
                       alignment: Alignment.topCenter,
                       child: LinearProgressIndicator(minHeight: 2),
                     ),
-                  if (showOffline) _OfflineOverlay(features: _features, controller: controller),
-                  if (showError) _ErrorOverlay(controller: controller, features: _features),
+                  if (showOffline)
+                    _OfflineOverlay(
+                        features: _features, controller: controller),
+                  if (showError)
+                    _ErrorOverlay(controller: controller, features: _features),
                   // The splash overlay paints over everything else (including
                   // ad placements) until its timer fires; the fade lets the
                   // page below reveal smoothly.
@@ -178,8 +180,8 @@ class _SplashOverlay extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final bg = parseColor(splash.backgroundColor,
-        fallback: theme.colorScheme.surface);
+    final bg =
+        parseColor(splash.backgroundColor, fallback: theme.colorScheme.surface);
     final fg = ThemeData.estimateBrightnessForColor(bg) == Brightness.dark
         ? Colors.white
         : Colors.black;

@@ -65,7 +65,8 @@ app:
 
     test('throws when the app: block is missing', () {
       expect(
-        () => AppIdentity.fromYamlString('flutter_ui:\n  theme: { brightness: dark }\n'),
+        () => AppIdentity.fromYamlString(
+            'flutter_ui:\n  theme: { brightness: dark }\n'),
         throwsA(isA<ConfigureError>()),
       );
     });
@@ -78,8 +79,7 @@ app:
 
     test('rejects URL-like host', () {
       expect(
-        () => sample(applicationId: null, admobAppId: null)
-          ..validate(),
+        () => sample(applicationId: null, admobAppId: null)..validate(),
         returnsNormally,
       );
       expect(
@@ -136,8 +136,7 @@ android {
     });
 
     test('leaves file unchanged when application_id unset', () {
-      final out =
-          gradleOp(sample(applicationId: null)).transform(before);
+      final out = gradleOp(sample(applicationId: null)).transform(before);
       expect(out, before);
     });
   });
@@ -157,12 +156,12 @@ android {
     test('rewrites deep-link host and AdMob value', () {
       final out = manifestOp(sample()).transform(before);
       expect(out, contains('android:host="shop.example.com"'));
-      expect(out, contains('android:value="ca-app-pub-1234567890123456~1234567890"'));
+      expect(out,
+          contains('android:value="ca-app-pub-1234567890123456~1234567890"'));
     });
 
     test('rewrites deep-link host even when admob unset', () {
-      final out =
-          manifestOp(sample(admobAppId: null)).transform(before);
+      final out = manifestOp(sample(admobAppId: null)).transform(before);
       expect(out, contains('android:host="shop.example.com"'));
       // AdMob block stays put when admob_app_id is unset.
       expect(out, contains('ca-app-pub-3940256099942544~3347511713'));
@@ -233,7 +232,8 @@ security:
   restrict_to_hosts:
     - "old.example.com"
 ''';
-      final out = yamlHostsOp(sample(), 'webview_config.yaml').transform(before);
+      final out =
+          yamlHostsOp(sample(), 'webview_config.yaml').transform(before);
       expect(out, contains('- "shop.example.com"'));
       expect(out, isNot(contains('old.example.com')));
     });

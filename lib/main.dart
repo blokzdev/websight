@@ -144,8 +144,7 @@ class ErrorApp extends StatelessWidget {
             children: [
               const Text(
                 'Failed to load assets/webview_config.yaml.',
-                style:
-                    TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
               ),
               const SizedBox(height: 12),
               const Text('Fix the errors below and restart the application.'),

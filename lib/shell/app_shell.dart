@@ -80,9 +80,8 @@ class _AppShellState extends State<AppShell> {
           layout == 'bottom_tabs' && widget.features.bottomTabs.items.isNotEmpty
               ? _buildBottomNavigationBar(context)
               : null,
-      floatingActionButton: widget.features.fab.visible
-          ? _buildFab(context, dispatcher)
-          : null,
+      floatingActionButton:
+          widget.features.fab.visible ? _buildFab(context, dispatcher) : null,
       body: Column(
         children: [
           _buildAdBanner(ads, 'top'),
@@ -177,8 +176,7 @@ class _AppShellState extends State<AppShell> {
                     .toList(growable: false),
               ),
             ),
-            if (d.footerItems.isNotEmpty)
-              const Divider(height: 1),
+            if (d.footerItems.isNotEmpty) const Divider(height: 1),
             ...d.footerItems.map((i) => _drawerTile(context, i, dispatcher)),
           ],
         ),

@@ -99,8 +99,8 @@ class UserScripts {
   const UserScripts({this.injectCssAsset, this.injectJsAsset});
 
   factory UserScripts.fromMap(Map<String, dynamic>? webviewSettings) {
-    final scripts = _typed<Map<String, dynamic>>(
-        webviewSettings?['custom_user_scripts']);
+    final scripts =
+        _typed<Map<String, dynamic>>(webviewSettings?['custom_user_scripts']);
     String? css;
     String? js;
     final cssMap = _typed<Map<String, dynamic>>(scripts?['inject_css']);
@@ -399,8 +399,7 @@ class ErrorPagesFeature {
 
   factory ErrorPagesFeature.fromMap(Map<String, dynamic>? map) {
     if (map == null) {
-      return const ErrorPagesFeature(
-          showOfflinePage: true, retryButton: true);
+      return const ErrorPagesFeature(showOfflinePage: true, retryButton: true);
     }
     return ErrorPagesFeature(
       showOfflinePage: _bool(map['show_offline_page'], fallback: true),
@@ -438,8 +437,7 @@ class UnofficialDisclaimerFeature {
     const defaults = UnofficialDisclaimerFeature(
       enabled: false,
       title: 'Unofficial app',
-      body:
-          'This app is an unofficial WebView wrapper. It is not affiliated '
+      body: 'This app is an unofficial WebView wrapper. It is not affiliated '
           'with or endorsed by the operator of the embedded website. '
           'Content is provided as-is by that website; the publisher of this '
           'app is not responsible for its accuracy or availability.\n\n'
@@ -519,7 +517,8 @@ class WebSightFeatures {
     final behaviorOverrides =
         _typed<Map<String, dynamic>>(raw['behavior_overrides']);
     return WebSightFeatures(
-      splash: SplashFeature.fromMap(_typed<Map<String, dynamic>>(raw['splash'])),
+      splash:
+          SplashFeature.fromMap(_typed<Map<String, dynamic>>(raw['splash'])),
       offline: OfflineHtmlFeature.fromMap(
           _typed<Map<String, dynamic>>(raw['offline_local_html'])),
       userScripts: UserScripts.fromMap(webviewSettings),

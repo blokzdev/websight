@@ -207,7 +207,8 @@ void main() {
         () {
       final a = UnofficialDisclaimerFeature.fromMap({'body': 'Same text.'});
       final b = UnofficialDisclaimerFeature.fromMap({'body': 'Same text.'});
-      final c = UnofficialDisclaimerFeature.fromMap({'body': 'Different text.'});
+      final c =
+          UnofficialDisclaimerFeature.fromMap({'body': 'Different text.'});
       expect(a.bodyDigest, b.bodyDigest);
       expect(a.bodyDigest, isNot(c.bodyDigest));
     });
@@ -251,7 +252,10 @@ void main() {
         'app': {
           'user_agent': {'mode': 'append', 'append': ' WebSight/1.0'}
         },
-        'billing': {'inapp_enabled': true, 'product_ids': ['pro']},
+        'billing': {
+          'inapp_enabled': true,
+          'product_ids': ['pro']
+        },
         'flutter_ui': {
           'layout': {
             'bottom_tabs': {

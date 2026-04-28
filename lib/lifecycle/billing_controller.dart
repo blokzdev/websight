@@ -29,8 +29,10 @@ class BillingController extends ChangeNotifier {
   Object? get lastError => _lastError;
 
   bool get available => _available;
-  List<ProductDetails> get products => List<ProductDetails>.unmodifiable(_products);
-  List<PurchaseDetails> get purchases => List<PurchaseDetails>.unmodifiable(_purchases);
+  List<ProductDetails> get products =>
+      List<ProductDetails>.unmodifiable(_products);
+  List<PurchaseDetails> get purchases =>
+      List<PurchaseDetails>.unmodifiable(_purchases);
 
   Future<void> initialize() async {
     if (!feature.enabled) return;
@@ -44,7 +46,8 @@ class BillingController extends ChangeNotifier {
       _purchaseSub = _iap.purchaseStream.listen(
         _onPurchasesUpdated,
         onDone: () => _purchaseSub?.cancel(),
-        onError: (Object e, StackTrace st) => _recordError('purchaseStream', e, st),
+        onError: (Object e, StackTrace st) =>
+            _recordError('purchaseStream', e, st),
       );
 
       await refreshProducts();

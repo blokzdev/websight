@@ -55,7 +55,8 @@ class WizardAnswers {
 String? validateHost(String input) {
   final s = input.trim();
   if (s.isEmpty) return 'host cannot be empty';
-  if (s.contains('://')) return 'host must not include a scheme (drop "https://")';
+  if (s.contains('://'))
+    return 'host must not include a scheme (drop "https://")';
   if (s.contains('/')) return 'host must not include a path';
   if (s.contains(' ')) return 'host must not contain spaces';
   if (!RegExp(r'^[a-z0-9.-]+$').hasMatch(s)) {

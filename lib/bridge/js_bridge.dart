@@ -43,7 +43,8 @@ class JsBridge {
   final WebSightConfig config;
   final BuildContext context;
 
-  static const MethodChannel _platform = MethodChannel('websight/method_channel');
+  static const MethodChannel _platform =
+      MethodChannel('websight/method_channel');
 
   /// Injects the helper script and instantiates the bridge object on `window`.
   Future<void> inject() async {
@@ -85,7 +86,8 @@ class JsBridge {
       debugPrint('JsBridge: dropped call to "$method" from disallowed origin');
       final cb = params['callbackId'];
       if (cb is String) {
-        await _rejectCallback(cb, BridgeErrorCodes.origin, 'Origin not allowed');
+        await _rejectCallback(
+            cb, BridgeErrorCodes.origin, 'Origin not allowed');
       }
       return;
     }
@@ -100,7 +102,8 @@ class JsBridge {
       (m) => m.split('(').first == method,
     );
     if (!isAllowedMethod) {
-      debugPrint('JsBridge: method "$method" not in jsBridge.methods allowlist');
+      debugPrint(
+          'JsBridge: method "$method" not in jsBridge.methods allowlist');
       return;
     }
 
@@ -147,7 +150,8 @@ class JsBridge {
       if (!context.mounted) return;
       context.go(route);
     } else if (action.startsWith('ui.toast:')) {
-      final message = _interpolate(action.substring('ui.toast:'.length), params);
+      final message =
+          _interpolate(action.substring('ui.toast:'.length), params);
       if (!context.mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text(message)),
@@ -206,21 +210,24 @@ class JsBridge {
           final raw = (params['url'] as String?) ?? '';
           final uri = Uri.tryParse(raw);
           if (uri == null) {
-            await _rejectCallback(callbackId, BridgeErrorCodes.args, 'Invalid URL');
+            await _rejectCallback(
+                callbackId, BridgeErrorCodes.args, 'Invalid URL');
             return;
           }
           if (await canLaunchUrl(uri)) {
             await launchUrl(uri, mode: LaunchMode.externalApplication);
             await _resolveCallback(callbackId, true);
           } else {
-            await _rejectCallback(callbackId, BridgeErrorCodes.unsupported, 'Cannot launch URL');
+            await _rejectCallback(
+                callbackId, BridgeErrorCodes.unsupported, 'Cannot launch URL');
           }
           break;
 
         case 'registerHttpDownload':
           final url = (params['url'] as String?) ?? '';
           if (url.isEmpty || Uri.tryParse(url) == null) {
-            await _rejectCallback(callbackId, BridgeErrorCodes.args, 'Invalid URL');
+            await _rejectCallback(
+                callbackId, BridgeErrorCodes.args, 'Invalid URL');
             return;
           }
           final result = await _platform.invokeMethod<Object?>(
@@ -236,12 +243,14 @@ class JsBridge {
           break;
 
         default:
-          await _rejectCallback(callbackId, BridgeErrorCodes.unsupported, 'Unknown method "$method"');
+          await _rejectCallback(callbackId, BridgeErrorCodes.unsupported,
+              'Unknown method "$method"');
       }
     } on PlatformException catch (e) {
       await _rejectCallback(callbackId, e.code, e.message ?? 'Platform error');
     } catch (e, st) {
-      if (kDebugMode) debugPrint('JsBridge dispatch failed for $method: $e\n$st');
+      if (kDebugMode)
+        debugPrint('JsBridge dispatch failed for $method: $e\n$st');
       await _rejectCallback(callbackId, BridgeErrorCodes.internal, '$e');
     }
   }
@@ -256,7 +265,8 @@ class JsBridge {
     );
   }
 
-  Future<void> _rejectCallback(String? callbackId, String code, String message) async {
+  Future<void> _rejectCallback(
+      String? callbackId, String code, String message) async {
     if (callbackId == null) return;
     final encodedId = jsonEncode(callbackId);
     final encodedError = jsonEncode({'code': code, 'message': message});

@@ -51,7 +51,8 @@ Future<DoctorResult> checkFlutter() async {
         status: DoctorStatus.fail,
         label: 'flutter',
         detail: 'flutter --version exited with ${r.exitCode}',
-        fix: 'Install Flutter stable: https://docs.flutter.dev/get-started/install',
+        fix:
+            'Install Flutter stable: https://docs.flutter.dev/get-started/install',
       );
     }
     final firstLine =
@@ -216,8 +217,7 @@ DoctorResult checkSigning(Directory root) {
       label: 'signing',
       detail:
           'android/key.properties missing. Release builds will fall back to debug signing.',
-      fix:
-          'Run `dart run tool/init.dart` and accept the keystore step, '
+      fix: 'Run `dart run tool/init.dart` and accept the keystore step, '
           'or `keytool -genkey` manually.',
     );
   }
@@ -229,7 +229,8 @@ DoctorResult checkSigning(Directory root) {
 }
 
 DoctorResult checkAdMobAppId(Directory root) {
-  final manifest = File('${root.path}/android/app/src/main/AndroidManifest.xml');
+  final manifest =
+      File('${root.path}/android/app/src/main/AndroidManifest.xml');
   if (!manifest.existsSync()) {
     return DoctorResult(
       status: DoctorStatus.fail,

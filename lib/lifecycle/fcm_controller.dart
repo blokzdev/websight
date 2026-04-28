@@ -47,7 +47,8 @@ class FcmController extends ChangeNotifier {
         notifyListeners();
       });
       _foregroundSub = FirebaseMessaging.onMessage.listen(_onForegroundMessage);
-      _openedSub = FirebaseMessaging.onMessageOpenedApp.listen(_onMessageOpenedApp);
+      _openedSub =
+          FirebaseMessaging.onMessageOpenedApp.listen(_onMessageOpenedApp);
 
       // Cold-start: handle a message that launched the app.
       final initial = await messaging.getInitialMessage();
