@@ -6,6 +6,12 @@ follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+## [1.0.0] - 2026-04-29
+
+First public release. WebSight is a forkable Android-only WebView app
+template driven by a single `webview_config.yaml`. Apache 2.0
+licensed.
+
 ### Added
 - **Setup wizard** — `dart run tool/init.dart`. Walks identity, theme,
   disclaimer, features, splash; writes `assets/webview_config.yaml`;
@@ -315,3 +321,7 @@ follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 - Tightened `file_paths.xml` (no longer expose entire external storage).
 - Added `network_security_config.xml` (HTTPS-only base).
 - Disabled `allowBackup` and `dataExtractionRules` by default.
+
+
+[Unreleased]: https://github.com/blokzdev/websight/compare/v1.0.0...HEAD
+[1.0.0]: https://github.com/blokzdev/websight/releases/tag/v1.0.0
