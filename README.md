@@ -74,9 +74,11 @@ smoke build. Re-runnable.
 The condensed manual flow is below; the canonical end-to-end guide
 (toolchain, identity, icons, splash, Firebase, AdMob, signing, Play
 Console, trademark/ToS guidance) lives in
-**[docs/WHITELABEL.md](./docs/WHITELABEL.md)**. Drop-in starter configs
-live in [examples/](./examples/). Run `dart run tool/doctor.dart` any
-time to survey project state.
+**[docs/WHITELABEL.md](./docs/WHITELABEL.md)**. Common questions
+(template vs fork, pulling upstream updates, multi-environment, what
+the license allows, etc.) are in **[docs/FAQ.md](./docs/FAQ.md)**.
+Drop-in starter configs live in [examples/](./examples/). Run
+`dart run tool/doctor.dart` any time to survey project state.
 
 ### 1. Start your project
 
