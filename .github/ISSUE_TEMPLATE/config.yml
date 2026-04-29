@@ -1,0 +1,12 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Question or discussion
+    url: https://github.com/blokzdev/websight/discussions
+    about: |
+      "How do I...?", design discussions, show-and-tell of forks.
+      Issues are for actionable bugs and feature requests.
+  - name: Security vulnerability
+    url: https://github.com/blokzdev/websight/security/advisories/new
+    about: |
+      Open a private security advisory instead of a public issue.
+      See SECURITY.md for the disclosure policy.

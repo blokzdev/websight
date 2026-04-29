@@ -119,12 +119,18 @@ class Swap {
 Op gradleOp(AppIdentity i) {
   final swaps = <Swap>[];
   if (i.applicationId != null) {
+    // Anchor to `defaultConfig { ... }` so productFlavor blocks (Play vs
+    // FOSS, dev vs prod) keep their own applicationId / suffix overrides.
+    // Without the anchor every `applicationId =` in the file gets
+    // clobbered to the same value the moment a flavor is added.
     swaps.add(Swap(
-      RegExp(r'(applicationId\s*=\s*")[^"]*(")'),
+      RegExp(r'(defaultConfig\s*\{[\s\S]*?applicationId\s*=\s*")[^"]*(")'),
       (m) => '${m[1]}${i.applicationId}${m[2]}',
     ));
+    // `namespace` is a top-level `android { }` property and does not
+    // appear inside flavors; anchor to the android block to be safe.
     swaps.add(Swap(
-      RegExp(r'(namespace\s*=\s*")[^"]*(")'),
+      RegExp(r'(android\s*\{[\s\S]*?namespace\s*=\s*")[^"]*(")'),
       (m) => '${m[1]}${i.applicationId}${m[2]}',
     ));
   }
@@ -133,8 +139,15 @@ Op gradleOp(AppIdentity i) {
 
 Op manifestOp(AppIdentity i) {
   final swaps = <Swap>[];
+  // Anchor the host swap to the autoVerify intent-filter. Without the
+  // anchor, every `<data android:host="...">` gets rewritten — including
+  // hosts the integrator added for unrelated intent-filters (oauth
+  // callback, share-target, custom scheme, etc.).
   swaps.add(Swap(
-    RegExp(r'(<data\s+android:host=")[^"]*(")'),
+    RegExp(
+      r'(<intent-filter[^>]*\bandroid:autoVerify="true"'
+      r'[\s\S]*?<data\s+android:host=")[^"]*(")',
+    ),
     (m) => '${m[1]}${i.host}${m[2]}',
   ));
   if (i.admobAppId != null) {
@@ -175,6 +188,11 @@ Op pubspecOp(AppIdentity i) {
 }
 
 Op yamlHostsOp(AppIdentity i, String yamlPath) {
+  // Replaces only the FIRST entry under `restrict_to_hosts:` and under
+  // `deep_links.hosts:`. Subsequent entries are intentionally preserved
+  // — some forks add CDN / login subdomains that the script has no way
+  // to know about. Use [auditYamlHostMultiplicity] to surface a warning
+  // when the source had multiple entries.
   return RegexOp(yamlPath, <Swap>[
     Swap(
       RegExp(
@@ -191,6 +209,79 @@ Op yamlHostsOp(AppIdentity i, String yamlPath) {
       (m) => '${m[1]}${i.host}${m[2]}',
     ),
   ]);
+}
+
+class HostMultiplicity {
+  HostMultiplicity({required this.restrictHosts, required this.deepLinkHosts});
+  final int restrictHosts;
+  final int deepLinkHosts;
+  bool get hasExtraEntries => restrictHosts > 1 || deepLinkHosts > 1;
+}
+
+/// Counts list entries under `restrict_to_hosts:` and `deep_links.hosts:`
+/// in a YAML string. Used by `tool/configure.dart` to warn the integrator
+/// when their config had additional host entries that [yamlHostsOp]
+/// intentionally left untouched.
+HostMultiplicity auditYamlHostMultiplicity(String yaml) {
+  return HostMultiplicity(
+    restrictHosts: _countListEntriesUnder(yaml, key: 'restrict_to_hosts'),
+    deepLinkHosts: _countListEntriesUnderDeepLinks(yaml),
+  );
+}
+
+int _countListEntriesUnder(String yaml, {required String key}) {
+  final lines = yaml.split('\n');
+  var i = 0;
+  while (i < lines.length) {
+    if (RegExp('^\\s*$key:\\s*\$').hasMatch(lines[i])) {
+      return _countListItemsAfter(lines, i + 1);
+    }
+    i++;
+  }
+  return 0;
+}
+
+int _countListEntriesUnderDeepLinks(String yaml) {
+  final lines = yaml.split('\n');
+  var inDeepLinks = false;
+  for (var i = 0; i < lines.length; i++) {
+    final line = lines[i];
+    if (RegExp(r'^\s*deep_links:\s*$').hasMatch(line)) {
+      inDeepLinks = true;
+      continue;
+    }
+    if (inDeepLinks && RegExp(r'^\s*hosts:\s*$').hasMatch(line)) {
+      return _countListItemsAfter(lines, i + 1);
+    }
+    // A new top-level key (no leading whitespace) ends the deep_links
+    // block before we found `hosts:` — guard against false matches in
+    // sibling sections.
+    if (inDeepLinks && line.isNotEmpty && !line.startsWith(' ')) {
+      inDeepLinks = false;
+    }
+  }
+  return 0;
+}
+
+int _countListItemsAfter(List<String> lines, int startIdx) {
+  var count = 0;
+  String? indent;
+  for (var i = startIdx; i < lines.length; i++) {
+    final line = lines[i];
+    if (line.trim().isEmpty) continue;
+    final leading = RegExp(r'^(\s*)').firstMatch(line)![1]!;
+    final isItem = line.trimLeft().startsWith('- ');
+    if (!isItem) {
+      // A non-item line at or below the list's indent means the list
+      // ended.
+      if (indent == null || leading.length <= indent.length) break;
+      continue;
+    }
+    indent ??= leading;
+    if (leading.length < indent.length) break;
+    count++;
+  }
+  return count;
 }
 
 String pubspecName(String displayName) {

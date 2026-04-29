@@ -272,11 +272,20 @@ DoctorResult checkDeepLinkHostMatchesYaml(Directory root) {
     yaml.readAsStringSync(),
   );
   final host = hostMatch?.group(1);
-  if (host == null || host == 'YOUR_PRIMARY_HOST_HERE') {
+  // `flutter.dev` is the demo template's home URL; an unmodified
+  // checkout is expected to have it in YAML but NOT in the manifest
+  // (the manifest still carries the YOUR_PRIMARY_HOST placeholder
+  // until `dart run tool/configure.dart` runs). Treat it as a
+  // placeholder so the doctor can run cleanly in CI on a fresh fork.
+  const demoHosts = {
+    'YOUR_PRIMARY_HOST_HERE',
+    'flutter.dev',
+  };
+  if (host == null || demoHosts.contains(host)) {
     return DoctorResult(
       status: DoctorStatus.info,
       label: 'deep-link host',
-      detail: 'app.host is unset / placeholder.',
+      detail: 'app.host is unset / template placeholder.',
     );
   }
   if (!manifest.readAsStringSync().contains('android:host="$host"')) {

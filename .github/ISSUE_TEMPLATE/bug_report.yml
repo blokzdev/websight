@@ -1,0 +1,79 @@
+name: Bug report
+description: Something is broken in WebSight itself (the shell, JS bridge, tooling, or build).
+title: "[bug] "
+labels: ["bug", "triage"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for taking the time to file a report. Before opening,
+        please run `dart run tool/doctor.dart` — most issues with a
+        fresh fork are misconfiguration that doctor can identify.
+
+        For security issues (anything that could be exploited remotely
+        from a malicious page loaded in the WebView), please open a
+        [private security advisory](https://github.com/blokzdev/websight/security/advisories/new)
+        instead of a public bug.
+
+  - type: textarea
+    id: what-happened
+    attributes:
+      label: What happened?
+      description: A clear description of the bug and what you expected instead.
+      placeholder: When I do X, Y happens. I expected Z.
+    validations:
+      required: true
+
+  - type: textarea
+    id: repro
+    attributes:
+      label: Steps to reproduce
+      description: |
+        Minimal reproduction. A reduced `webview_config.yaml` is the
+        most useful thing you can include.
+      value: |
+        1.
+        2.
+        3.
+    validations:
+      required: true
+
+  - type: input
+    id: flutter-version
+    attributes:
+      label: Flutter version
+      description: Output of `flutter --version`
+      placeholder: "Flutter 3.41.8 • channel stable"
+    validations:
+      required: true
+
+  - type: input
+    id: device
+    attributes:
+      label: Device + Android API level
+      placeholder: "Pixel 7, Android 14 (API 34)"
+    validations:
+      required: true
+
+  - type: input
+    id: commit
+    attributes:
+      label: WebSight commit SHA or tag
+      placeholder: "v1.0.0 / 7a9737e"
+    validations:
+      required: true
+
+  - type: textarea
+    id: logs
+    attributes:
+      label: Relevant logs
+      description: |
+        `flutter logs` output around the failure. Redact tokens or
+        personal URLs first. Long logs are OK — collapsed by default.
+      render: shell
+
+  - type: textarea
+    id: doctor
+    attributes:
+      label: Output of `dart run tool/doctor.dart --plain`
+      render: shell

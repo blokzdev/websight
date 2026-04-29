@@ -1,0 +1,53 @@
+name: Feature request
+description: Suggest a feature for WebSight (a new YAML key, bridge method, or shell capability).
+title: "[feat] "
+labels: ["enhancement", "triage"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        WebSight's scope is intentionally narrow: declarative
+        Android-WebView shell driven by `webview_config.yaml`. Features
+        that fit that scope are great. Features that drag the project
+        toward "general-purpose Flutter framework" or "iOS shell" are
+        usually deferred.
+
+        For broad questions ("How would I do X?", "Should I...?"),
+        please use [Discussions](https://github.com/blokzdev/websight/discussions)
+        instead of an issue.
+
+  - type: textarea
+    id: problem
+    attributes:
+      label: What problem are you trying to solve?
+      description: |
+        Describe the user-facing problem, not the proposed
+        implementation. "Users can't X" is more useful than "Add Y".
+    validations:
+      required: true
+
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposed approach (optional)
+      description: |
+        If you have a concrete proposal — a new YAML key, a bridge
+        method signature, a config schema change — sketch it here.
+
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives considered
+      description: |
+        What workarounds exist today? Why are they insufficient?
+
+  - type: dropdown
+    id: scope
+    attributes:
+      label: Does this require a breaking config change?
+      options:
+        - "No — additive only"
+        - "Yes — would break existing webview_config.yaml files"
+        - "Unsure"
+    validations:
+      required: true

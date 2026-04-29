@@ -6,6 +6,12 @@ follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+## [1.0.0] - 2026-04-29
+
+First public release. WebSight is a forkable Android-only WebView app
+template driven by a single `webview_config.yaml`. Apache 2.0
+licensed.
+
 ### Added
 - **Setup wizard** — `dart run tool/init.dart`. Walks identity, theme,
   disclaimer, features, splash; writes `assets/webview_config.yaml`;
@@ -179,6 +185,35 @@ follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 - Unit tests for feature configs, helpers, and the action dispatcher.
 
 ### Changed
+- Bumped Android Kotlin Gradle Plugin to 2.1.20 (was 1.9.22). Required
+  by device_info_plus 12.x's Kotlin 2.x stdlib extensions; older KGP
+  fails the build with unresolvable Kotlin standard-library symbols.
+- Bumped `compileSdk` and `targetSdk` to 36. Required by
+  webview_flutter_android's AAR metadata; the previous 34/34 produced
+  a Gradle compatibility warning before the bump.
+- Added Firebase BOM 33.7.0 + `com.google.firebase:firebase-messaging`
+  (no `-ktx` suffix; deprecated in BOM 33.x). Brings
+  FirebaseMessagingService onto the app's compile classpath so
+  WebSightMessagingService resolves at build time.
+- Added `com.google.guava:guava:33.0.0-android` to bring
+  `com.google.common.util.concurrent.ListenableFuture` onto the
+  compile classpath. CameraX's `ProcessCameraProvider.getInstance()`
+  returns the type; without Guava on classpath KGP 2.x can't resolve
+  it.
+- Manifest `<queries>` element repositioned to be a sibling of
+  `<application>` (was nested inside). AAPT2 silently merged it before
+  but Play Console rejects nested placement.
+- README rename-vs-configure ordering note now matches WHITELABEL: run
+  `change_app_package_name` BEFORE `tool/configure.dart` (or re-run
+  configure afterwards).
+- `tool/configure.dart` regex anchors tightened: `gradleOp` now
+  rewrites only `defaultConfig.applicationId` (not productFlavor ids);
+  `manifestOp` now rewrites only the autoVerify intent-filter's host.
+- `tool/init.dart` (wizard) now halts cleanly on subprocess failure.
+  Previously a non-zero exit from `flutterfire configure` was logged
+  as a warning and the wizard proceeded, leaving Firebase
+  half-applied. Errors emit one line + tail of stderr instead of a
+  Dart stack trace.
 - `permissions_controller.dart` honors
   `notifications.post_notifications_permission` (was hardcoded on).
 - `app_router.dart`: initial location resolved from `app.home_url` against
@@ -252,6 +287,23 @@ follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 - Removed redundant `WebBridge.kt` (functionally identical to
   `WebSightChromeClient.kt`).
 - Removed dead `lib/bridge/method_channel_bridge.dart` (never imported).
+- BillingController missing `_disposed` flag: a final purchase update
+  arriving during stream cancellation could call `notifyListeners()`
+  after super.dispose, throwing in release. Mirrored FcmController's
+  pattern; `_iap` is now `late final` so unit tests don't trigger
+  Android BillingClient registration.
+- `yamlHostsOp` only replaced the FIRST entry under
+  `restrict_to_hosts:` and `deep_links.hosts:`. Behavior unchanged for
+  the common single-entry case, but `tool/configure.dart` now prints a
+  NOTE listing how many extra entries existed so integrators can
+  review them by hand.
+- `_SplashOverlay` AnimatedSwitcher's dismissed branch had no key,
+  letting it collide with sibling `SizedBox.shrink` instances and
+  occasionally glitch the cross-fade. Added a distinct `ValueKey`.
+- Doctor's deep-link host check no longer hard-fails when YAML host is
+  the demo `flutter.dev` placeholder (was already tolerant of
+  `YOUR_PRIMARY_HOST_HERE`). Lets `tool/doctor.dart` run cleanly in CI
+  on a fresh fork before `tool/configure.dart` runs.
 
 ### Removed
 - `GEMINI.md` (37KB AI-agent prompt unrelated to product).
@@ -269,3 +321,7 @@ follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 - Tightened `file_paths.xml` (no longer expose entire external storage).
 - Added `network_security_config.xml` (HTTPS-only base).
 - Disabled `allowBackup` and `dataExtractionRules` by default.
+
+
+[Unreleased]: https://github.com/blokzdev/websight/compare/v1.0.0...HEAD
+[1.0.0]: https://github.com/blokzdev/websight/releases/tag/v1.0.0
