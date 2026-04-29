@@ -43,7 +43,7 @@ dev_dependencies:
   flutter_native_splash: ^2.4.4
   flutter_test:
     sdk: flutter
-  json_serializable: ^6.7.1
+  json_serializable: ^6.13.1
   mason_logger: ^0.3.0       # used by tool/init.dart for the rich TUI mode
 
 flutter:
