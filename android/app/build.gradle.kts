@@ -99,11 +99,21 @@ dependencies {
     implementation("androidx.activity:activity-ktx:1.9.2")
     implementation("com.google.android.material:material:1.12.0")
 
-    // CameraX (used by ScannerActivity)
-    implementation("androidx.camera:camera-core:1.3.4")
-    implementation("androidx.camera:camera-camera2:1.3.4")
-    implementation("androidx.camera:camera-lifecycle:1.3.4")
-    implementation("androidx.camera:camera-view:1.3.4")
+    // CameraX (used by ScannerActivity). Pinned to 1.5.1 to match what the
+    // camera_android_camerax Flutter plugin pulls transitively; Gradle would
+    // resolve to the higher version anyway, but pinning matches keeps the
+    // AAR-metadata check happy.
+    implementation("androidx.camera:camera-core:1.5.1")
+    implementation("androidx.camera:camera-camera2:1.5.1")
+    implementation("androidx.camera:camera-lifecycle:1.5.1")
+    implementation("androidx.camera:camera-view:1.5.1")
+
+    // Guava brings `com.google.common.util.concurrent.ListenableFuture`,
+    // which `ProcessCameraProvider.getInstance()` returns. Without it on
+    // the app's compile classpath, KGP 2.x can't access the type and every
+    // call on the returned future ("unbindAll", "bindToLifecycle",
+    // "addListener") fails to resolve.
+    implementation("com.google.guava:guava:33.0.0-android")
 
     // ML Kit barcode scanning (bundled model)
     implementation("com.google.mlkit:barcode-scanning:17.3.0")
@@ -118,4 +128,13 @@ dependencies {
 
     // FileProvider, browser custom tabs
     implementation("androidx.browser:browser:1.8.0")
+
+    // Firebase Messaging (used directly by WebSightMessagingService).
+    // The firebase_messaging Flutter plugin uses `implementation` for its
+    // native dependency, so the FirebaseMessagingService / RemoteMessage
+    // classes are not automatically on our app's compile classpath. The BOM
+    // keeps versions aligned with whatever firebase-core resolves to via
+    // google-services.json.
+    implementation(platform("com.google.firebase:firebase-bom:33.7.0"))
+    implementation("com.google.firebase:firebase-messaging-ktx")
 }
