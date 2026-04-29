@@ -55,26 +55,38 @@ Future<int> runWizard(Prompter p, WizardOptions opts) async {
     return 0;
   }
 
-  // ---------- Write YAML + propagate ----------
-  await _writeYamlAndPropagate(p, opts.projectRoot, answers);
+  // Subprocess steps run sequentially after this point and any of them
+  // can fail (configure, change_app_package_name, launcher icons,
+  // splash, flutterfire, keytool). On failure we emit one clean line
+  // identifying the step + tail of stderr instead of letting a Dart
+  // stack trace dump on the user.
+  try {
+    // ---------- Write YAML + propagate ----------
+    await _writeYamlAndPropagate(p, opts.projectRoot, answers);
 
-  // ---------- Optional Kotlin package rename ----------
-  await _maybeRenamePackage(p, answers);
+    // ---------- Optional Kotlin package rename ----------
+    await _maybeRenamePackage(p, answers);
 
-  // ---------- Icons ----------
-  await _maybeRunLauncherIcons(p, opts.projectRoot, answers);
+    // ---------- Icons ----------
+    await _maybeRunLauncherIcons(p, opts.projectRoot, answers);
 
-  // ---------- Splash ----------
-  await _maybeRunNativeSplash(p, opts.projectRoot, answers);
+    // ---------- Splash ----------
+    await _maybeRunNativeSplash(p, opts.projectRoot, answers);
 
-  // ---------- Firebase ----------
-  await _maybeRunFlutterfire(p, opts);
+    // ---------- Firebase ----------
+    await _maybeRunFlutterfire(p, opts);
 
-  // ---------- Keystore ----------
-  await _maybeGenerateKeystore(p, opts);
+    // ---------- Keystore ----------
+    await _maybeGenerateKeystore(p, opts);
 
-  // ---------- Smoke ----------
-  await _maybeRunSmoke(p, opts);
+    // ---------- Smoke ----------
+    await _maybeRunSmoke(p, opts);
+  } on _SubprocessFailure catch (e) {
+    p.error('Wizard halted: $e');
+    p.info('Re-run `dart run tool/init.dart` once the failing step '
+        'is fixed. Steps that already succeeded are idempotent.');
+    return 1;
+  }
 
   // ---------- Final checklist ----------
   _printFinalChecklist(p, answers);
@@ -359,8 +371,18 @@ Future<void> _maybeRunFlutterfire(Prompter p, WizardOptions opts) async {
   );
   final code = await process.exitCode;
   if (code != 0) {
-    p.warn('flutterfire configure exited with code $code. '
-        'Run it manually before building release.');
+    // Don't bury this in a `warn()` — Firebase wiring is required for
+    // release builds and silently continuing leaves the user with a
+    // half-applied configuration.
+    throw _SubprocessFailure(
+      'flutterfire configure',
+      ProcessResult(
+          0,
+          code,
+          '',
+          'flutterfire configure exited with code '
+              '$code (interactive run; see output above for details)'),
+    );
   }
 }
 
@@ -493,7 +515,22 @@ class _SubprocessFailure implements Exception {
   final ProcessResult result;
   @override
   String toString() {
-    return '$label exited with code ${result.exitCode}\n'
-        '${result.stdout}\n${result.stderr}';
+    // Truncate noisy stdout/stderr so the wizard's final error line
+    // stays scannable. Full output is still available via --verbose at
+    // tool/init.dart.
+    final tail = _tail(
+      [result.stdout?.toString() ?? '', result.stderr?.toString() ?? '']
+          .where((s) => s.isNotEmpty)
+          .join('\n'),
+      lines: 10,
+    );
+    final body = tail.isEmpty ? '' : '\n  $tail';
+    return '$label exited with code ${result.exitCode}$body';
+  }
+
+  static String _tail(String s, {required int lines}) {
+    final all = s.trimRight().split('\n');
+    if (all.length <= lines) return all.join('\n  ');
+    return all.sublist(all.length - lines).join('\n  ');
   }
 }

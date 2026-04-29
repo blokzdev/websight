@@ -48,6 +48,7 @@ void main(List<String> args) {
   final changed = <String>[];
   final unchanged = <String>[];
   final missing = <String>[];
+  HostMultiplicity? hostAudit;
 
   for (final op in ops) {
     final file = File(op.path);
@@ -56,6 +57,9 @@ void main(List<String> args) {
       continue;
     }
     final original = file.readAsStringSync();
+    if (op.path == configPath) {
+      hostAudit = auditYamlHostMultiplicity(original);
+    }
     final updated = op.transform(original);
     if (updated == original) {
       unchanged.add(op.path);
@@ -66,6 +70,22 @@ void main(List<String> args) {
   }
 
   _printSummary(identity, changed, unchanged, missing, dryRun);
+  if (hostAudit != null && hostAudit.hasExtraEntries) {
+    stderr.writeln();
+    stderr.writeln('configure: NOTE — your YAML had multiple host entries:');
+    if (hostAudit.restrictHosts > 1) {
+      stderr.writeln(
+          '  security.restrict_to_hosts: ${hostAudit.restrictHosts} entries '
+          '(only the first was rewritten to "${identity.host}")');
+    }
+    if (hostAudit.deepLinkHosts > 1) {
+      stderr.writeln(
+          '  navigation.deep_links.hosts: ${hostAudit.deepLinkHosts} entries '
+          '(only the first was rewritten to "${identity.host}")');
+    }
+    stderr.writeln(
+        '  Review the remaining entries by hand if they need to change.');
+  }
   if (missing.isNotEmpty) exitCode = 1;
 }
 

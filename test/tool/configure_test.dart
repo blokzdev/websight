@@ -139,6 +139,41 @@ android {
       final out = gradleOp(sample(applicationId: null)).transform(before);
       expect(out, before);
     });
+
+    test('does not clobber productFlavor applicationIds', () {
+      const flavored = '''
+android {
+    namespace = "com.app.websight"
+
+    defaultConfig {
+        applicationId = "com.app.websight"
+        minSdk = 24
+    }
+
+    flavorDimensions += "distribution"
+    productFlavors {
+        create("play") {
+            dimension = "distribution"
+            applicationIdSuffix = ".play"
+        }
+        create("foss") {
+            dimension = "distribution"
+            applicationId = "com.app.websight.foss"
+        }
+    }
+}
+''';
+      final out = gradleOp(sample()).transform(flavored);
+      // defaultConfig got rewritten…
+      expect(
+          out,
+          contains(
+              'defaultConfig {\n        applicationId = "com.example.shop"'));
+      // …but the foss flavor's explicit applicationId is preserved.
+      expect(out, contains('applicationId = "com.app.websight.foss"'));
+      // …and applicationIdSuffix is not collapsed into applicationId.
+      expect(out, contains('applicationIdSuffix = ".play"'));
+    });
   });
 
   group('manifestOp', () {
@@ -179,6 +214,25 @@ android {
       final out = manifestOp(sample()).transform(before);
       expect(out, contains('android:value="websight_default_channel"'));
       expect(out, contains('ca-app-pub-1234567890123456~1234567890'));
+    });
+
+    test('only rewrites host inside the autoVerify intent-filter', () {
+      const before = '''
+<intent-filter android:autoVerify="true">
+    <data android:scheme="https" />
+    <data android:host="YOUR_PRIMARY_HOST" />
+</intent-filter>
+
+<intent-filter>
+    <action android:name="android.intent.action.VIEW" />
+    <data android:scheme="myappoauth" />
+    <data android:host="oauth.callback.example.com" />
+</intent-filter>
+''';
+      final out = manifestOp(sample()).transform(before);
+      expect(out, contains('android:host="shop.example.com"'));
+      // The non-autoVerify intent-filter's host is preserved.
+      expect(out, contains('android:host="oauth.callback.example.com"'));
     });
   });
 
@@ -235,6 +289,77 @@ security:
           yamlHostsOp(sample(), 'webview_config.yaml').transform(before);
       expect(out, contains('- "shop.example.com"'));
       expect(out, isNot(contains('old.example.com')));
+    });
+
+    test('preserves additional host entries (replaces only the first)', () {
+      const before = '''
+navigation:
+  deep_links:
+    enable: true
+    hosts:
+      - "old.example.com"
+      - "cdn.example.com"
+
+security:
+  restrict_to_hosts:
+    - "old.example.com"
+    - "login.example.com"
+''';
+      final out =
+          yamlHostsOp(sample(), 'webview_config.yaml').transform(before);
+      expect(out, contains('- "shop.example.com"'));
+      expect(out, contains('- "cdn.example.com"'));
+      expect(out, contains('- "login.example.com"'));
+    });
+  });
+
+  group('auditYamlHostMultiplicity', () {
+    test('counts entries under restrict_to_hosts and deep_links.hosts', () {
+      const yaml = '''
+navigation:
+  deep_links:
+    enable: true
+    hosts:
+      - "a.example.com"
+      - "b.example.com"
+
+security:
+  restrict_to_hosts:
+    - "a.example.com"
+''';
+      final audit = auditYamlHostMultiplicity(yaml);
+      expect(audit.restrictHosts, 1);
+      expect(audit.deepLinkHosts, 2);
+      expect(audit.hasExtraEntries, isTrue);
+    });
+
+    test('returns false for hasExtraEntries on a single-host config', () {
+      const yaml = '''
+navigation:
+  deep_links:
+    enable: true
+    hosts:
+      - "only.example.com"
+
+security:
+  restrict_to_hosts:
+    - "only.example.com"
+''';
+      final audit = auditYamlHostMultiplicity(yaml);
+      expect(audit.restrictHosts, 1);
+      expect(audit.deepLinkHosts, 1);
+      expect(audit.hasExtraEntries, isFalse);
+    });
+
+    test('handles missing keys gracefully', () {
+      const yaml = '''
+flutter_ui:
+  theme: { brightness: dark }
+''';
+      final audit = auditYamlHostMultiplicity(yaml);
+      expect(audit.restrictHosts, 0);
+      expect(audit.deepLinkHosts, 0);
+      expect(audit.hasExtraEntries, isFalse);
     });
   });
 
