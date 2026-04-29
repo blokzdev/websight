@@ -195,6 +195,22 @@ app:
       final r = checkDeepLinkHostMatchesYaml(root);
       expect(r.status, DoctorStatus.ok);
     });
+
+    test('treats demo-template hosts as placeholders (info, not fail)', () {
+      // Demo template ships YAML with host=flutter.dev but the manifest
+      // still has YOUR_PRIMARY_HOST until `tool/configure.dart` runs.
+      // The doctor should NOT hard-fail this state — otherwise CI
+      // breaks on every fresh fork before configure runs.
+      writeFile('assets/webview_config.yaml', '''
+app:
+  name: "WebSight"
+  host: "flutter.dev"
+''');
+      writeFile('android/app/src/main/AndroidManifest.xml',
+          '<data android:host="YOUR_PRIMARY_HOST" />');
+      final r = checkDeepLinkHostMatchesYaml(root);
+      expect(r.status, DoctorStatus.info);
+    });
   });
 
   group('checkTemplatePlaceholders', () {

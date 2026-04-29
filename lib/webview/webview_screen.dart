@@ -123,9 +123,16 @@ class _WebViewScreenState extends State<WebViewScreen> {
                   AnimatedSwitcher(
                     duration:
                         Duration(milliseconds: _features.splash.fadeOutMs),
+                    // AnimatedSwitcher keys child transitions on Key;
+                    // the splash branch already has its own ValueKey,
+                    // so the dismissed branch needs a distinct one too
+                    // — otherwise sibling SizedBox.shrink instances
+                    // can collide and glitch the cross-fade.
                     child: _showSplash
                         ? _SplashOverlay(splash: _features.splash)
-                        : const SizedBox.shrink(),
+                        : const SizedBox.shrink(
+                            key: ValueKey<String>('websight.splash.dismissed'),
+                          ),
                   ),
                 ],
               ),

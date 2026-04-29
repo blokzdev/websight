@@ -74,6 +74,42 @@ jobs:
           fi
           echo "manifest deep-link host matches app.host ($host)."
 
+      - name: Manifest health (queries placement + sibling order)
+        # The <queries> element MUST be a sibling of <application>, not nested
+        # inside it; AAPT2 will silently merge but Play Console rejects, and
+        # we've regressed this before. Cheap to guard.
+        shell: bash
+        run: |
+          set -e
+          manifest=android/app/src/main/AndroidManifest.xml
+          # Strip comments before checking so commented examples don't trip us up.
+          stripped=$(python3 -c "import re,sys;print(re.sub(r'<!--[\s\S]*?-->','',open('$manifest').read()))")
+          # Reject any opening <queries ...> that appears between the matching
+          # opening and closing <application> tags.
+          if printf '%s' "$stripped" \
+              | python3 -c "
+import re, sys
+src = sys.stdin.read()
+m = re.search(r'<application\b[\s\S]*?</application>', src)
+if not m:
+    sys.exit(0)
+if re.search(r'<queries\b', m.group(0)):
+    print('::error file=android/app/src/main/AndroidManifest.xml::<queries> nested inside <application>. Move it to be a sibling.')
+    sys.exit(1)
+"; then
+            echo "manifest <queries> placement looks OK."
+          else
+            exit 1
+          fi
+
+      - name: Doctor (advisory; demo placeholders are tolerated)
+        # `tool/doctor.dart` exits 1 only on hard fails (missing flutter,
+        # missing manifest, etc.). The demo template's `flutter.dev` host and
+        # bundled AdMob test ID surface as warns, not fails — so this step
+        # stays green for the unmodified template while still catching
+        # real misconfigurations a fork is about to push.
+        run: dart run tool/doctor.dart --plain || (echo "doctor reported a hard fail; see above"; exit 1)
+
       - name: Upload coverage
         if: always()
         uses: actions/upload-artifact@v4
