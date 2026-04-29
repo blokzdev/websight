@@ -119,7 +119,7 @@ dependencies {
     implementation("com.google.mlkit:barcode-scanning:17.3.0")
 
     // User Messaging Platform (consent)
-    implementation("com.google.android.ump:user-messaging-platform:3.0.0")
+    implementation("com.google.android.ump:user-messaging-platform:4.0.0")
 
     // Play services for in-app updates and integrity
     implementation("com.google.android.play:app-update:2.1.0")
