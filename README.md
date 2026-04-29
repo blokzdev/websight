@@ -1,5 +1,10 @@
 # WebSight
 
+[![CI](https://github.com/blokzdev/websight/actions/workflows/ci.yml/badge.svg)](https://github.com/blokzdev/websight/actions/workflows/ci.yml)
+[![License: Apache 2.0](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](./LICENSE)
+[![Flutter](https://img.shields.io/badge/Flutter-stable-02569B?logo=flutter)](https://flutter.dev)
+[![Use this template](https://img.shields.io/badge/Use%20this-template-2ea44f?logo=github)](https://github.com/blokzdev/websight/generate)
+
 **Declarative Android WebView app shell driven by a single
 `webview_config.yaml`.**
 
@@ -9,6 +14,19 @@ in-app purchases, and analytics — all without writing platform code.
 
 WebSight is **Android-only** (iOS is on the v1.x roadmap) and is
 distributed as a fork-the-template starter, not a runtime.
+
+> **Quick start:** click **[Use this template](https://github.com/blokzdev/websight/generate)**
+> on GitHub, clone your new repo, run `dart run tool/init.dart`, and
+> follow the prompts. ~5 minutes to a runnable debug APK.
+
+<!--
+  TODO(screenshot): drop a 1200x675 PNG or short GIF of the running
+  demo (drawer + bottom tabs + AdMob banner) at docs/assets/hero.png
+  and uncomment the line below. Until then, the docs link to the
+  schema reference does the heavy lifting.
+
+  ![WebSight demo](./docs/assets/hero.png)
+-->
 
 ---
 
