@@ -135,6 +135,10 @@ dependencies {
     // classes are not automatically on our app's compile classpath. The BOM
     // keeps versions aligned with whatever firebase-core resolves to via
     // google-services.json.
+    //
+    // Note: as of Firebase BOM 33.x the -ktx variants were deprecated and
+    // their Kotlin extensions folded into the main artifact. Use the plain
+    // `firebase-messaging` here, not `firebase-messaging-ktx`.
     implementation(platform("com.google.firebase:firebase-bom:33.7.0"))
-    implementation("com.google.firebase:firebase-messaging-ktx")
+    implementation("com.google.firebase:firebase-messaging")
 }
