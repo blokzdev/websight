@@ -15,10 +15,14 @@ class BillingController extends ChangeNotifier {
   BillingController({required this.feature});
 
   final BillingFeature feature;
-  final InAppPurchase _iap = InAppPurchase.instance;
+  // Resolve the singleton lazily so constructing the controller with
+  // feature.enabled=false (or in a unit test where the platform plugin
+  // isn't registered) doesn't trigger BillingClient platform setup.
+  late final InAppPurchase _iap = InAppPurchase.instance;
 
   StreamSubscription<List<PurchaseDetails>>? _purchaseSub;
   bool _available = false;
+  bool _disposed = false;
   List<ProductDetails> _products = const <ProductDetails>[];
   final List<PurchaseDetails> _purchases = <PurchaseDetails>[];
 
@@ -35,9 +39,10 @@ class BillingController extends ChangeNotifier {
       List<PurchaseDetails>.unmodifiable(_purchases);
 
   Future<void> initialize() async {
-    if (!feature.enabled) return;
+    if (!feature.enabled || _disposed) return;
     try {
       _available = await _iap.isAvailable();
+      if (_disposed) return;
       if (!_available) {
         notifyListeners();
         return;
@@ -62,6 +67,7 @@ class BillingController extends ChangeNotifier {
   /// any failure inside that path is swallowed to keep billing surface
   /// independent of analytics availability.
   void _recordError(String where, Object e, StackTrace st) {
+    if (_disposed) return;
     _lastError = e;
     notifyListeners();
     if (kDebugMode) debugPrint('BillingController.$where: $e\n$st');
@@ -77,10 +83,11 @@ class BillingController extends ChangeNotifier {
   }
 
   Future<void> refreshProducts() async {
-    if (feature.productIds.isEmpty) return;
+    if (feature.productIds.isEmpty || _disposed) return;
     try {
       final response =
           await _iap.queryProductDetails(feature.productIds.toSet());
+      if (_disposed) return;
       _products = response.productDetails;
       _lastError = null;
       notifyListeners();
@@ -90,6 +97,7 @@ class BillingController extends ChangeNotifier {
   }
 
   Future<bool> buy(String productId, {bool consumable = false}) async {
+    if (_disposed) return false;
     try {
       final product = _products.firstWhere(
         (p) => p.id == productId,
@@ -108,8 +116,10 @@ class BillingController extends ChangeNotifier {
   }
 
   Future<void> restore() async {
+    if (_disposed) return;
     try {
       await _iap.restorePurchases();
+      if (_disposed) return;
       _lastError = null;
       notifyListeners();
     } catch (e, st) {
@@ -119,6 +129,7 @@ class BillingController extends ChangeNotifier {
   }
 
   void _onPurchasesUpdated(List<PurchaseDetails> updates) {
+    if (_disposed) return;
     for (final p in updates) {
       if (p.status == PurchaseStatus.pending) continue;
       if (p.pendingCompletePurchase) {
@@ -131,7 +142,9 @@ class BillingController extends ChangeNotifier {
 
   @override
   void dispose() {
+    _disposed = true;
     _purchaseSub?.cancel();
+    _purchaseSub = null;
     super.dispose();
   }
 }
