@@ -105,25 +105,31 @@
             android:name="flutterEmbedding"
             android:value="2" />
 
-        <!-- Required for share_plus / image_picker: URI grant text/* targets -->
-        <queries>
-            <intent>
-                <action android:name="android.intent.action.PROCESS_TEXT" />
-                <data android:mimeType="text/plain" />
-            </intent>
-            <intent>
-                <action android:name="android.intent.action.VIEW" />
-                <data android:scheme="https" />
-            </intent>
-            <intent>
-                <action android:name="android.intent.action.SENDTO" />
-                <data android:scheme="mailto" />
-            </intent>
-            <intent>
-                <action android:name="android.intent.action.DIAL" />
-                <data android:scheme="tel" />
-            </intent>
-        </queries>
-
     </application>
+
+    <!--
+      Package visibility (Android 11+): declare the intents we expect to
+      hand off to other apps so they remain queryable. Required for
+      share_plus, image_picker, url_launcher, tel:/mailto: schemes.
+      MUST be a sibling of <application>, NOT nested inside it (AAPT
+      will fail manifest linking otherwise).
+    -->
+    <queries>
+        <intent>
+            <action android:name="android.intent.action.PROCESS_TEXT" />
+            <data android:mimeType="text/plain" />
+        </intent>
+        <intent>
+            <action android:name="android.intent.action.VIEW" />
+            <data android:scheme="https" />
+        </intent>
+        <intent>
+            <action android:name="android.intent.action.SENDTO" />
+            <data android:scheme="mailto" />
+        </intent>
+        <intent>
+            <action android:name="android.intent.action.DIAL" />
+            <data android:scheme="tel" />
+        </intent>
+    </queries>
 </manifest>
