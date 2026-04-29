@@ -136,8 +136,8 @@ The list below is what is actually in the repo and what is next.
 
 ### ✅ Whitelabel ergonomics (landed)
 
-- `docs/WHITELABEL.md` — end-to-end recipe for forking the template
-  to any web app's domain. Covers identity, icon generation
+- `docs/WHITELABEL.md` — end-to-end recipe for spinning the template
+  up against any web app's domain. Covers identity, icon generation
   (icon.kitchen → `flutter_launcher_icons`), splash, Firebase / AdMob
   / IAP, signing, smoke checklist, Play Console listing, and
   trademark / ToS / financial-services policy guidance.

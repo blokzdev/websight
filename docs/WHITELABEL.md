@@ -4,7 +4,7 @@ How to take this template, point it at any web app's domain, and ship a
 signed Android App Bundle to Google Play. End-to-end recipe;
 domain-agnostic.
 
-> **Quick reference:** if you've forked a WebSight app before, the
+> **Quick reference:** if you've shipped a WebSight app before, the
 > condensed cheat-sheet is at the bottom of this doc.
 
 ---
@@ -36,10 +36,11 @@ scenarios are strict subsets.
 
 ---
 
-## 3. Per-fork identity
+## 3. Per-project identity
 
-Every fork is an independent app. The single source of truth for
-identity is `assets/webview_config.yaml` `app:`:
+Every project you generate from the template is an independent app.
+The single source of truth for identity is
+`assets/webview_config.yaml` `app:`:
 
 ```yaml
 app:
@@ -446,12 +447,12 @@ co-pilot) can usually point at the line in seconds.
 
 ## Maintainer note: GitHub template flag
 
-This project is designed to be cloned per-app. To make that one-click
-on GitHub, a maintainer with admin access on `blokzdev/websight` should
-flip the **template repository** flag once:
+This project is published as a GitHub **template repository**, so the
+"Use this template" button on the repo page produces a fresh repo
+with no shared history — the right starting point for a downstream
+app. The flag is already enabled; nothing to do.
 
-> Settings → General → Repository: tick **"Template repository"** → Save.
-
-Then a "Use this template" button appears on the repo page. Users get
-a fresh repo with no fork ancestry, which is the right starting point
-for a forked app. No effect on contributors who clone normally.
+Maintainer note: keep the flag on (Settings → General → Repository
+→ "Template repository" should stay ticked). Disabling it removes
+the button without warning. Contributors who want to send fixes
+upstream still use **Fork** — that workflow is unaffected.
