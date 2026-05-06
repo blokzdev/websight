@@ -1,18 +1,28 @@
-# WebSight starter config for blockchair.com.
+# WebSight starter config for blockchair.com — chrome-less / native-feel.
 #
 # Copy this over assets/webview_config.yaml, then run
 #     dart run tool/configure.dart
 # to propagate the identity into the Android build files.
 #
+# DESIGN NOTES
+#   * No AppBar, no drawer, no bottom tabs. Blockchair already ships a fully
+#     responsive mobile UI; the goal is for WebSight to be invisible.
+#   * Edge-to-edge with transparent system bars; the page paints under the
+#     status / nav bars and uses `env(safe-area-inset-*)` (auto-injected by
+#     WebSight) to inset its own header / footer when needed.
+#   * Multi-window popups, HTML5 fullscreen video, in-page camera / mic /
+#     geolocation prompts all enabled — the things users complained about in
+#     the legacy Java wrapper.
+#   * Ads are off in this starter so the first build doesn't hit AdMob/UMP at
+#     all. Flip `ads.enabled: true` once you've created the AdMob app + units
+#     and pasted the IDs in.
+#
 # IMPORTANT before publishing:
 #   1. blockchair.com is a third-party site you don't own. Read
-#      docs/WHITELABEL.md "Trademark, ToS, and Play policy" before
-#      submitting to Play Console.
-#   2. Replace `app.application_id` and `app.admob_app_id` below with
-#      your own values.
-#   3. Ads are disabled in this starter so the first build doesn't hit
-#      AdMob/UMP at all. Flip `ads.enabled: true` once you've created
-#      the AdMob app + units and pasted the ids in.
+#      docs/WHITELABEL.md "Trademark, ToS, and Play policy" before submitting
+#      to Play Console.
+#   2. Replace `app.application_id` and `app.admob_app_id` with your own
+#      values.
 
 app:
   name: "Blockchair Lens"
@@ -31,39 +41,38 @@ flutter_ui:
     use_material3: true
     font_family: "Inter"
 
+  # Edge-to-edge by default; this is what makes the wrapped site feel
+  # native rather than "embedded in a wrapper".
+  system_ui:
+    mode: "edge_to_edge"
+    status_bar:
+      visible: true
+      transparent: true
+      icon_brightness: "auto"
+    navigation_bar:
+      visible: true
+      transparent: true
+      icon_brightness: "auto"
+    inject_safe_area_css: true
+
+  # No native chrome at all — the wrapped site IS the UI. Want a refresh
+  # button? Use pull-to-refresh (configured per-route below) or wire it
+  # into the site's own UI via the JS bridge.
   layout:
-    scaffold: "drawer"
+    scaffold: "none"
     appbar:
-      visible: true
-      actions:
-        - id: "refresh"
-          icon: "Icons.refresh"
-          action: "webview.reload"
+      visible: false
+      actions: []
 
-    drawer:
-      visible: true
-      header:
-        title: "Blockchair Lens"
-        subtitle: "Unofficial WebView"
-      items:
-        - title: "Home"
-          icon: "Icons.home_outlined"
-          route: "/web/home"
-        - title: "Settings"
-          icon: "Icons.settings_outlined"
-          route: "/native/settings"
-
-  routes:
-    - path: "/web/home"
-      kind: "webview"
-      title: "Blockchair"
-      url: "https://blockchair.com/"
-      pull_to_refresh: true
-      appbar_visible: true
-    - path: "/native/settings"
-      kind: "native"
-      title: "Settings"
-      icon: "Icons.settings_outlined"
+# Single webview route; pull-to-refresh handles "I want to reload" without
+# needing a refresh button in chrome.
+routes:
+  - path: "/web/home"
+    kind: "webview"
+    title: "Blockchair"
+    url: "https://blockchair.com/"
+    pull_to_refresh: true
+    appbar_visible: false
 
 navigation:
   external_allowlist:
@@ -77,6 +86,50 @@ webview_settings:
   javascript_enabled: true
   dom_storage_enabled: true
 
+  # OAuth flows that open `window.open(...)` are routed into a Flutter modal
+  # popup. Auto-closes when the popup navigates back to a host in
+  # `security.restrict_to_hosts`.
+  multi_window:
+    enabled: true
+    close_on_parent_host: true
+    reload_parent_on_close: true
+
+  # The fullscreen icon on `<video>` elements actually works.
+  fullscreen_video:
+    enabled: true
+    lock_landscape: false
+
+# In-page QR scanners, camera demos, and `navigator.geolocation` prompts on
+# blockchair.com (or any allowed host) trigger a single Android permission
+# dialog. The native JS bridge `WebSightBridge.scanBarcode()` is still
+# available for sites that prefer a native scanner.
+permissions:
+  webview:
+    allow_camera: true
+    allow_microphone: true
+    allow_geolocation: true
+    allow_protected_media: false
+
+security:
+  restrict_to_hosts:
+    - "blockchair.com"
+
+js_bridge:
+  enabled: true
+  name: "WebSightBridge"
+  secure_origin_only: true
+  methods:
+    - "scanBarcode(callbackFn)"
+    - "share(text)"
+    - "getDeviceInfo()"
+    - "downloadBlob(url, filename?)"
+    - "openExternal(url)"
+    - "registerHttpDownload(url, opts?)"
+  inbound_events:
+    - event: "toast"
+      args: ["message"]
+      action: "ui.toast:{message}"
+
 file_uploads:
   enabled: false           # blockchair.com doesn't expose <input type=file>
   capture_camera: false
@@ -86,17 +139,6 @@ downloads:
   enabled: true
   use_android_download_manager: true
   support_blob_urls: true
-
-splash:
-  enabled: true
-  timeout_ms: 1200
-  fade_out_ms: 300
-  background_color: "#0B0B0C"
-  tagline: "Loading Blockchair…"
-
-offline_local_html:
-  fallback_when_offline: true
-  index_asset: "offline/index.html"
 
 ads:
   enabled: false
@@ -116,29 +158,6 @@ rating_prompt:
   enabled: true
   after_launches: 5
 
-js_bridge:
-  enabled: true
-  name: "WebSightBridge"
-  secure_origin_only: true
-  methods:
-    - "scanBarcode(callbackFn)"
-    - "share(text)"
-    - "getDeviceInfo()"
-    - "downloadBlob(url, filename?)"
-    - "openExternal(url)"
-    - "registerHttpDownload(url, opts?)"
-  inbound_events:
-    - event: "openNative"
-      args: ["route"]
-      action: "navigate:{route}"
-    - event: "toast"
-      args: ["message"]
-      action: "ui.toast:{message}"
-
-security:
-  restrict_to_hosts:
-    - "blockchair.com"
-
 analytics_crash:
   analytics: true
   crashlytics: true
@@ -156,6 +175,17 @@ behavior_overrides:
   error_pages:
     show_offline_page: true
     retry_button: true
+
+splash:
+  enabled: true
+  timeout_ms: 1200
+  fade_out_ms: 300
+  background_color: "#0B0B0C"
+  tagline: "Loading Blockchair…"
+
+offline_local_html:
+  fallback_when_offline: true
+  index_asset: "offline/index.html"
 
 # Strongly recommended for any whitelabel of a site you don't own.
 # Reads "this app is unofficial" on first launch; users must accept

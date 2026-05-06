@@ -6,6 +6,90 @@ follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+### Added — native-feel hardening
+
+Closes the four user-facing gaps versus the legacy Java WebView wrapper
+template most integrators are migrating from. All four are configurable
+via YAML and ON by default.
+
+- **Edge-to-edge / immersive system UI** —
+  `flutter_ui.system_ui.mode: edge_to_edge` (new default). The WebView
+  paints under transparent status / nav bars instead of being squeezed
+  between opaque chrome. Per-bar `visible` / `transparent` /
+  `icon_brightness` knobs (`auto` follows theme). New
+  `lib/lifecycle/system_chrome_controller.dart` centralises
+  `SystemChrome.setEnabledSystemUIMode` + `setSystemUIOverlayStyle`
+  and re-applies on `didChangePlatformBrightness`. `app_shell.dart`
+  flips `extendBodyBehindAppBar` / `extendBody` / transparent
+  scaffold background when the bars are transparent. Other modes:
+  `default` (opaque), `immersive_sticky` (swipe to reveal), `leanback`
+  (fully hidden).
+- **Multi-window OAuth popups** —
+  `webview_settings.multi_window` (default enabled). The wrapped
+  page's `window.open(url)` calls now route into a Flutter modal
+  `WebView` route (`lib/webview/popup_window.dart`) instead of
+  silently failing. Auto-closes when the popup navigates back to a
+  host in `security.restrict_to_hosts`; reloads the parent on close.
+  Implemented as a JS interceptor + bridge built-in (`openPopup`)
+  rather than a platform fork — `webview_flutter_android` 4.x does
+  not expose `onCreateWindow` publicly. Critical for
+  Sign-in-with-Google / Microsoft / Twitter / Facebook flows.
+- **HTML5 fullscreen `<video>`** —
+  `webview_settings.fullscreen_video` (default enabled). Hooks
+  `AndroidWebViewController.setCustomWidgetCallbacks`
+  (`onShowCustomWidget` / `onHideCustomWidget`); the platform widget
+  is hosted in a black-backed Scaffold overlay; orientation locks
+  optionally; system-back asks the WebView to exit fullscreen, then
+  the plugin's hide callback restores prior orientation + system UI.
+- **In-page WebView permissions** —
+  `permissions.webview` (camera / microphone / geolocation / protected
+  media). Routes `WebChromeClient.onPermissionRequest` and
+  `setGeolocationPermissionsPromptCallbacks` through
+  `permission_handler` so the user sees a single Android dialog
+  instead of a separate WebView prompt. Default-deny `protected_media`;
+  `retain_geolocation` controls whether the grant is per-origin
+  remembered.
+
+### Added — UX polish
+
+- **Safe-area CSS shim** auto-injected on `pageFinished`. Adds
+  `viewport-fit=cover` to the page's viewport meta and exposes
+  `--websight-safe-{top,bottom,left,right}` CSS variables. Wrapped
+  sites can pad their own header / footer with
+  `env(safe-area-inset-*)` or the variables. Disable with
+  `flutter_ui.system_ui.inject_safe_area_css: false`.
+- **`examples/blockchair.yaml`** rewritten as the canonical
+  chrome-less / native-feel example. `scaffold: "none"`,
+  `appbar.visible: false`, edge-to-edge system bars, multi-window
+  popups + fullscreen video + WebView permissions all on,
+  pull-to-refresh on the single web route.
+
+### Changed
+
+- `WebSightApp` is now a `StatefulWidget` with `WidgetsBindingObserver`
+  so it can re-apply system-bar overlay style on
+  `didChangePlatformBrightness`. Public surface unchanged.
+- `JsBridge` constructor takes a `WebSightFeatures` parameter (was
+  config-only). Internal change — the bridge is constructed in
+  `webview_controller.dart`, no integrator-visible API.
+- New `_builtinMethods` set on `JsBridge` lets WebSight-internal
+  methods (currently just `openPopup`) bypass the
+  `js_bridge.methods` allowlist, since they're posted by injected
+  WebSight JS, not by integrator code. They are still gated by
+  `_isOriginAllowed`.
+
+### Documentation
+
+- `docs/bridge-api.md`: new "In-page WebView permissions",
+  "Multi-window popups (OAuth)", and "HTML5 fullscreen video"
+  subsections.
+- `docs/internal/config-reference.yaml`: annotated entries for
+  `flutter_ui.system_ui`, `webview_settings.multi_window`,
+  `webview_settings.fullscreen_video`, `permissions.webview`.
+- `README.md`: "Native-feel by default" bullet at the top of "What
+  you get".
+- `assets/webview_config.yaml`: inline comments on every new key.
+
 ## [1.0.0] - 2026-04-29
 
 First public release. WebSight is a forkable Android-only WebView app

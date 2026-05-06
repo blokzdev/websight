@@ -4,10 +4,13 @@ import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:permission_handler/permission_handler.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:websight/bridge/js_bridge.dart';
 import 'package:websight/config/feature_configs.dart';
 import 'package:websight/config/webview_config.dart';
+import 'package:websight/lifecycle/system_chrome_controller.dart';
+import 'package:websight/webview/popup_window.dart';
 import 'package:webview_flutter/webview_flutter.dart';
 import 'package:webview_flutter_android/webview_flutter_android.dart';
 
@@ -81,8 +84,12 @@ class WebsightWebViewController extends ChangeNotifier {
     _applyUserAgent();
 
     if (config.jsBridge.enabled) {
-      _jsBridge =
-          JsBridge(controller: controller, config: config, context: context);
+      _jsBridge = JsBridge(
+        controller: controller,
+        config: config,
+        features: features,
+        context: context,
+      );
       controller.addJavaScriptChannel(
         config.jsBridge.name,
         onMessageReceived: _jsBridge.handleMessage,
@@ -90,15 +97,151 @@ class WebsightWebViewController extends ChangeNotifier {
     }
   }
 
+  /// Track whether we're currently rendering an HTML5 fullscreen `<video>`
+  /// custom view so [onHideCustomWidget] knows whether to restore the
+  /// previous orientation / system-UI mode.
+  Widget? _fullscreenWidget;
+  bool _lockedOrientationForFullscreen = false;
+
   static const MethodChannel _platformChannel =
       MethodChannel('websight/method_channel');
 
   void _applyAndroidSpecifics() {
-    if (controller.platform is AndroidWebViewController) {
-      final android = controller.platform as AndroidWebViewController;
-      AndroidWebViewController.enableDebugging(kDebugMode);
-      android.setMediaPlaybackRequiresUserGesture(true);
-      unawaited(android.setOnShowFileSelector(_onShowFileSelector));
+    if (controller.platform is! AndroidWebViewController) return;
+    final android = controller.platform as AndroidWebViewController;
+    AndroidWebViewController.enableDebugging(kDebugMode);
+    android.setMediaPlaybackRequiresUserGesture(true);
+    unawaited(android.setOnShowFileSelector(_onShowFileSelector));
+    unawaited(
+      android.setOnPlatformPermissionRequest(_onPlatformPermissionRequest),
+    );
+    unawaited(
+      android.setGeolocationPermissionsPromptCallbacks(
+        onShowPrompt: _onGeolocationPermissionsShowPrompt,
+      ),
+    );
+    if (features.fullscreenVideo.enabled) {
+      unawaited(
+        android.setCustomWidgetCallbacks(
+          onShowCustomWidget: _onShowFullscreenVideo,
+          onHideCustomWidget: _onHideFullscreenVideo,
+        ),
+      );
+    }
+  }
+
+  /// Routes WebChromeClient.onPermissionRequest (camera / mic) to the
+  /// configured allowlist + the runtime permission_handler. The web
+  /// permission grant is conditional on the OS-level permission also
+  /// being granted; otherwise `getUserMedia` would resolve, then fail
+  /// silently the moment the WebView tried to attach a real device.
+  Future<void> _onPlatformPermissionRequest(
+    PlatformWebViewPermissionRequest request,
+  ) async {
+    final allow = features.webviewPermissions;
+    final wantedTypes = <WebViewPermissionResourceType>{};
+    for (final type in request.types) {
+      if (type == WebViewPermissionResourceType.camera && allow.allowCamera) {
+        wantedTypes.add(type);
+      } else if (type == WebViewPermissionResourceType.microphone &&
+          allow.allowMicrophone) {
+        wantedTypes.add(type);
+      }
+    }
+    if (wantedTypes.length != request.types.length) {
+      // At least one requested resource is denied by config; deny the
+      // whole request to keep the WebView's resource set consistent.
+      await request.deny();
+      return;
+    }
+    // Request the matching OS-level permissions (no-op if already granted).
+    final permissionsToRequest = <Permission>{};
+    for (final type in wantedTypes) {
+      if (type == WebViewPermissionResourceType.camera) {
+        permissionsToRequest.add(Permission.camera);
+      } else if (type == WebViewPermissionResourceType.microphone) {
+        permissionsToRequest.add(Permission.microphone);
+      }
+    }
+    final statuses = await permissionsToRequest.toList().request();
+    final allGranted =
+        statuses.values.every((s) => s.isGranted || s.isLimited);
+    if (allGranted) {
+      await request.grant();
+    } else {
+      await request.deny();
+    }
+  }
+
+  Future<GeolocationPermissionsResponse> _onGeolocationPermissionsShowPrompt(
+    GeolocationPermissionsRequestParams params,
+  ) async {
+    final allow = features.webviewPermissions.allowGeolocation;
+    if (!allow) {
+      return const GeolocationPermissionsResponse(allow: false, retain: false);
+    }
+    // The wrapped page is asking for geolocation; require the runtime
+    // location permission too.
+    final status = await Permission.locationWhenInUse.request();
+    final granted = status.isGranted || status.isLimited;
+    return GeolocationPermissionsResponse(
+      allow: granted,
+      retain: granted && features.webviewPermissions.retainGeolocation,
+    );
+  }
+
+  /// Hosts the `View` returned by `WebChromeClient.onShowCustomView` inside
+  /// a Flutter overlay. The plugin already wraps it as a [Widget], so we
+  /// just push it on top of the route.
+  void _onShowFullscreenVideo(
+    Widget widget,
+    void Function() onHidden,
+  ) {
+    if (_fullscreenWidget != null) return;
+    _fullscreenWidget = widget;
+
+    if (features.fullscreenVideo.lockLandscape) {
+      _lockedOrientationForFullscreen = true;
+      unawaited(SystemChrome.setPreferredOrientations(const <DeviceOrientation>[
+        DeviceOrientation.landscapeLeft,
+        DeviceOrientation.landscapeRight,
+      ]));
+    }
+    unawaited(
+      SystemChrome.setEnabledSystemUIMode(SystemUiMode.immersiveSticky),
+    );
+
+    if (!context.mounted) return;
+    Navigator.of(context, rootNavigator: true).push<void>(
+      PageRouteBuilder<void>(
+        opaque: true,
+        fullscreenDialog: true,
+        transitionDuration: const Duration(milliseconds: 120),
+        pageBuilder: (_, __, ___) => _FullscreenVideoHost(
+          child: widget,
+          onExit: () {
+            onHidden();
+            // The plugin will then call setCustomWidgetCallbacks.onHide,
+            // which fires _onHideFullscreenVideo to restore state.
+          },
+        ),
+      ),
+    );
+  }
+
+  void _onHideFullscreenVideo() {
+    if (_fullscreenWidget == null) return;
+    _fullscreenWidget = null;
+    if (context.mounted) {
+      Navigator.of(context, rootNavigator: true).maybePop();
+    }
+    // Restore platform default UI; the SystemChromeController re-applies
+    // the configured edge-to-edge on the next route build.
+    unawaited(SystemChromeController.resetToDefault());
+    if (_lockedOrientationForFullscreen) {
+      unawaited(SystemChrome.setPreferredOrientations(
+          const <DeviceOrientation>[]));
+      _lockedOrientationForFullscreen = false;
     }
   }
 
@@ -175,11 +318,82 @@ class WebsightWebViewController extends ChangeNotifier {
       if (_disposed) return;
       await _injectJs(scripts.injectJsAsset!);
     }
+    // Safe-area CSS shim. Adds CSS variables that mirror Android's
+    // window-inset insets, so a wrapped site can pad its own header /
+    // footer with `padding-top: env(safe-area-inset-top)` style rules.
+    // WebView already exposes `env(safe-area-inset-*)` natively, but
+    // older Chrome versions need `viewport-fit=cover` injected too —
+    // most blockchain explorers don't ship that.
+    if (_disposed) return;
+    if (features.systemUi.injectSafeAreaCss) {
+      await _injectSafeAreaShim();
+    }
     if (_disposed) return;
     if (config.jsBridge.enabled && _isBridgeAllowed(url)) {
       await _jsBridge.inject();
       if (_disposed) return;
       await _maybeInstallDownloadInterceptor();
+      if (_disposed) return;
+      if (features.multiWindow.enabled) {
+        await _installPopupOpenInterceptor();
+      }
+    }
+  }
+
+  /// Inject `popupOpenInterceptorJs` so the page's `window.open()` calls are
+  /// routed into our bridge → [PopupWindow] flow. Idempotent — the script
+  /// guards itself against re-installation.
+  Future<void> _installPopupOpenInterceptor() async {
+    try {
+      await controller.runJavaScript(
+        popupOpenInterceptorJs(bridgeName: config.jsBridge.name),
+      );
+    } catch (e) {
+      if (kDebugMode) debugPrint('Popup-open interceptor inject failed: $e');
+    }
+  }
+
+  /// Make sure the WebView reports the right viewport for edge-to-edge
+  /// layout. Without `viewport-fit=cover` Chrome will not fire
+  /// `env(safe-area-inset-*)` — sites get a blank inset and overlap the
+  /// transparent system bars.
+  Future<void> _injectSafeAreaShim() async {
+    try {
+      await controller.runJavaScript('''
+(function () {
+  if (window.__websightSafeAreaInjected) return;
+  window.__websightSafeAreaInjected = true;
+  try {
+    var meta = document.querySelector('meta[name="viewport"]');
+    if (meta) {
+      var content = meta.getAttribute('content') || '';
+      if (!/viewport-fit\\s*=\\s*cover/i.test(content)) {
+        meta.setAttribute(
+          'content',
+          (content ? content + ', ' : '') + 'viewport-fit=cover'
+        );
+      }
+    } else {
+      meta = document.createElement('meta');
+      meta.name = 'viewport';
+      meta.content = 'width=device-width, initial-scale=1, viewport-fit=cover';
+      document.head.appendChild(meta);
+    }
+    var style = document.createElement('style');
+    style.setAttribute('data-websight-safearea', '1');
+    style.appendChild(document.createTextNode(
+      ':root { ' +
+      '--websight-safe-top: env(safe-area-inset-top, 0px); ' +
+      '--websight-safe-bottom: env(safe-area-inset-bottom, 0px); ' +
+      '--websight-safe-left: env(safe-area-inset-left, 0px); ' +
+      '--websight-safe-right: env(safe-area-inset-right, 0px); }'
+    ));
+    document.head.appendChild(style);
+  } catch (e) {}
+})();
+''');
+    } catch (e) {
+      if (kDebugMode) debugPrint('Safe-area shim inject failed: $e');
     }
   }
 
@@ -308,6 +522,13 @@ class WebsightWebViewController extends ChangeNotifier {
     super.dispose();
   }
 
+  /// Wraps the platform-supplied custom widget (the View returned by
+  /// `WebChromeClient.onShowCustomView`) in a black-backed Scaffold so it
+  /// sits over the rest of the route. Tapping system back asks the WebView
+  /// to exit fullscreen; the platform plugin then fires `onHideCustomWidget`
+  /// which clears our overlay.
+  Widget? get currentFullscreenWidget => _fullscreenWidget;
+
   /// Loads the bundled offline page as an HTML data URI. Avoids `file://` so
   /// strict mixed-content policy and our security delegate stay engaged.
   Future<void> loadOfflineFallback() async {
@@ -325,5 +546,30 @@ class WebsightWebViewController extends ChangeNotifier {
     } catch (e) {
       if (kDebugMode) debugPrint('loadOfflineFallback failed: $e');
     }
+  }
+}
+
+/// Black-backed scaffold that hosts the platform fullscreen-video widget.
+/// System back asks the WebView (via [onExit]) to leave fullscreen; the
+/// plugin then triggers `onHideCustomWidget` and clears the overlay.
+class _FullscreenVideoHost extends StatelessWidget {
+  const _FullscreenVideoHost({required this.child, required this.onExit});
+
+  final Widget child;
+  final VoidCallback onExit;
+
+  @override
+  Widget build(BuildContext context) {
+    return PopScope(
+      canPop: false,
+      onPopInvokedWithResult: (didPop, _) {
+        if (didPop) return;
+        onExit();
+      },
+      child: Scaffold(
+        backgroundColor: Colors.black,
+        body: child,
+      ),
+    );
   }
 }

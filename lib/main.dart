@@ -14,6 +14,7 @@ import 'package:websight/lifecycle/disclaimer_controller.dart';
 import 'package:websight/lifecycle/fcm_controller.dart';
 import 'package:websight/lifecycle/permissions_controller.dart';
 import 'package:websight/lifecycle/rating_controller.dart';
+import 'package:websight/lifecycle/system_chrome_controller.dart';
 import 'package:websight/lifecycle/update_controller.dart';
 import 'package:websight/shell/app_router.dart';
 import 'package:websight/shell/disclaimer_gate.dart';
@@ -43,6 +44,19 @@ Future<void> main() async {
     appName: config.app.name,
   );
 
+  // Apply the configured edge-to-edge / immersive system UI style as early
+  // as we can — before runApp so the very first frame draws under the
+  // transparent bars. Re-applied on theme-mode changes inside WebSightApp.
+  final systemChrome = SystemChromeController(feature: features.systemUi);
+  final initialBrightness =
+      WidgetsBinding.instance.platformDispatcher.platformBrightness;
+  final initialThemeBrightness = switch (config.flutterUi.theme.brightness) {
+    'dark' => Brightness.dark,
+    'light' => Brightness.light,
+    _ => initialBrightness,
+  };
+  unawaited(systemChrome.applyForBrightness(initialThemeBrightness));
+
   final analytics = AnalyticsController(config: config);
   await analytics.initialize();
 
@@ -70,6 +84,7 @@ Future<void> main() async {
       providers: [
         Provider<WebSightConfig>.value(value: config),
         Provider<WebSightFeatures>.value(value: features),
+        Provider<SystemChromeController>.value(value: systemChrome),
         // AnalyticsController is intentionally a plain Provider — it holds no
         // listeners, streams, or other resources that need disposal. The
         // FirebaseAnalytics / Crashlytics SDKs themselves manage their own
@@ -87,8 +102,43 @@ Future<void> main() async {
   );
 }
 
-class WebSightApp extends StatelessWidget {
+class WebSightApp extends StatefulWidget {
   const WebSightApp({super.key});
+
+  @override
+  State<WebSightApp> createState() => _WebSightAppState();
+}
+
+class _WebSightAppState extends State<WebSightApp>
+    with WidgetsBindingObserver {
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addObserver(this);
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
+  }
+
+  @override
+  void didChangePlatformBrightness() {
+    // Re-apply system-bar icon brightness when the user toggles their
+    // OS-level dark mode while the app is running. Only matters when
+    // theme.brightness == 'system'; for explicit light/dark it's a no-op.
+    if (!mounted) return;
+    final config = context.read<WebSightConfig>();
+    if (config.flutterUi.theme.brightness != 'system') return;
+    final platformBrightness =
+        WidgetsBinding.instance.platformDispatcher.platformBrightness;
+    unawaited(
+      context.read<SystemChromeController>().applyForBrightness(
+            platformBrightness,
+          ),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {

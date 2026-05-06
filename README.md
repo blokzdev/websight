@@ -33,6 +33,17 @@ template** to spin up your app, not a runtime.
 
 ## What you get
 
+- **Native-feel by default**: edge-to-edge with transparent system bars
+  (`flutter_ui.system_ui.mode: edge_to_edge`), so the wrapped site fills
+  the screen instead of looking like an embed. `viewport-fit=cover` and
+  `--websight-safe-*` CSS variables are auto-injected so the site can
+  inset its own header/footer with `env(safe-area-inset-*)`. Set
+  `mode: default` for the standard "shell with chrome" look.
+- **In-page features that actually work**: OAuth popups (`window.open` →
+  Flutter modal WebView, auto-closes when the provider redirects home),
+  HTML5 `<video>` fullscreen, in-page camera / mic /
+  `navigator.geolocation` prompts (one Android dialog, no separate
+  WebView popup). All toggleable in YAML.
 - **One YAML file**: theme, layout (drawer / bottom tabs / top tabs / none),
   app bar actions, drawer / FAB, deep links, host allowlist, ads,
   analytics, FCM, in-app updates, in-app purchases, splash, offline

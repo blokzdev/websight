@@ -87,9 +87,44 @@ webview_config:
         enabled: false
         asset_path: "website/js/test.js"
 
+    # ✅ Multi-window popup support. webview_flutter_android does not expose
+    # `WebChromeClient.onCreateWindow` publicly, so WebSight intercepts
+    # `window.open(url)` from the wrapped page and pushes the URL into a
+    # Flutter modal `WebView` route. Critical for OAuth flows that pop a
+    # new window (Google / Microsoft / Twitter / Facebook sign-in).
+    multi_window:
+      enabled: true                  # disable to suppress popups entirely
+      close_on_parent_host: true     # auto-close when popup hits a parent host
+      reload_parent_on_close: true   # reload the parent page after popup closes
+
+    # ✅ HTML5 `<video>` fullscreen handler. Without this, tapping the
+    # fullscreen icon on a `<video>` element does nothing (the page calls
+    # `WebChromeClient.onShowCustomView`, which would otherwise be ignored).
+    fullscreen_video:
+      enabled: true
+      lock_landscape: false          # let the video / page decide orientation
+
   # ✅ Per-route booleans live on each route entry; this top-level
   # `pull_to_refresh:` block is read by the loader but only the route's
   # own `pull_to_refresh: true` actually drives the gesture today.
+
+  # =========================================================================
+  # WEBVIEW PERMISSIONS (in-page browser APIs)
+  # =========================================================================
+  permissions:
+    # ✅ Allowlist for prompts the wrapped site can trigger via standard
+    # browser APIs (`getUserMedia`, `navigator.geolocation`). When a
+    # request matches the allowlist, the corresponding Android runtime
+    # permission is requested via `permission_handler`; the user sees a
+    # single OS-level prompt, not a separate WebView dialog. When a
+    # request is denied here, the WebView's resource grant is denied
+    # entirely (so the page's `getUserMedia` Promise rejects).
+    webview:
+      allow_camera: true              # in-page camera (e.g. WebRTC samples)
+      allow_microphone: true          # getUserMedia audio
+      allow_geolocation: true         # navigator.geolocation prompts
+      allow_protected_media: false    # EME / DRM resource id; opt-in only
+      retain_geolocation: false       # remember the user's geo grant per origin
 
   # =========================================================================
   # FILE UPLOADS / DOWNLOADS
@@ -280,6 +315,26 @@ webview_config:
       on_surface: "#F5F5F5"
       use_material3: true
       font_family: "Inter"
+
+    # ✅ System UI (status / nav bars). Drives `SystemChrome.setEnabledSystemUIMode`
+    # and `setSystemUIOverlayStyle`, plus the AppShell's `extendBody`/
+    # `extendBodyBehindAppBar` flags. The default `edge_to_edge` mode is what
+    # makes a wrapped site feel native rather than embedded — the WebView
+    # paints under transparent system bars.
+    system_ui:
+      mode: "edge_to_edge"        # default | edge_to_edge | immersive_sticky | leanback
+      status_bar:
+        visible: true             # ignored under immersive_sticky / leanback
+        transparent: true
+        icon_brightness: "auto"   # auto (follows theme) | light | dark
+      navigation_bar:
+        visible: true
+        transparent: true
+        icon_brightness: "auto"
+      # Inject `viewport-fit=cover` + `--websight-safe-*` CSS variables so
+      # the wrapped site can pad its own header/footer with
+      # `env(safe-area-inset-*)` / `var(--websight-safe-top)` and friends.
+      inject_safe_area_css: true
 
     layout:
       # ✅ One of: drawer | bottom_tabs | none. (top_tabs is reserved.)
