@@ -342,6 +342,48 @@ void main() {
       );
       expect(SystemUiFeature.fromMap(null).isImmersive, isFalse);
     });
+
+    group('auto_pad_body / auto_pad_edges', () {
+      test('defaults to enabled with top + bottom edges', () {
+        final s = SystemUiFeature.fromMap(null);
+        expect(s.autoPadBody, isTrue);
+        expect(s.autoPadEdges, <String>{'top', 'bottom'});
+      });
+
+      test('explicit disable wins over defaults', () {
+        final s = SystemUiFeature.fromMap(<String, dynamic>{
+          'auto_pad_body': false,
+        });
+        expect(s.autoPadBody, isFalse);
+        // Edges retain default (still parseable; controller gates on
+        // autoPadBody anyway).
+        expect(s.autoPadEdges, <String>{'top', 'bottom'});
+      });
+
+      test('explicit edges replace defaults', () {
+        final s = SystemUiFeature.fromMap(<String, dynamic>{
+          'auto_pad_edges': ['top', 'left', 'right'],
+        });
+        expect(s.autoPadEdges, <String>{'top', 'left', 'right'});
+      });
+
+      test('unknown edge names are dropped', () {
+        final s = SystemUiFeature.fromMap(<String, dynamic>{
+          'auto_pad_edges': ['top', 'topp', 'BOTTOM', 'middle', 'left'],
+        });
+        // `BOTTOM` is normalized to lowercase; `topp`/`middle` are dropped.
+        expect(s.autoPadEdges, <String>{'top', 'bottom', 'left'});
+      });
+
+      test('empty list disables padding even with auto_pad_body=true', () {
+        final s = SystemUiFeature.fromMap(<String, dynamic>{
+          'auto_pad_body': true,
+          'auto_pad_edges': <String>[],
+        });
+        expect(s.autoPadBody, isTrue);
+        expect(s.autoPadEdges, isEmpty);
+      });
+    });
   });
 
   group('MultiWindowFeature', () {

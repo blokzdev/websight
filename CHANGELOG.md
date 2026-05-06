@@ -58,6 +58,14 @@ via YAML and ON by default.
   sites can pad their own header / footer with
   `env(safe-area-inset-*)` or the variables. Disable with
   `flutter_ui.system_ui.inject_safe_area_css: false`.
+- **Defensive `<body>` auto-padding** for sites that don't natively
+  respect safe-area insets. Wraps the rule in `@supports
+  (padding: env(safe-area-inset-top))` so older engines ignore it. New
+  knobs `flutter_ui.system_ui.auto_pad_body` (default `true`) and
+  `auto_pad_edges` (default `["top","bottom"]`; accepts any subset of
+  `top`/`bottom`/`left`/`right`). Set `auto_pad_body: false` for sites
+  that already handle insets (Tailwind apps, mobile-first frameworks)
+  to avoid stacked padding.
 - **`examples/blockchair.yaml`** rewritten as the canonical
   chrome-less / native-feel example. `scaffold: "none"`,
   `appbar.visible: false`, edge-to-edge system bars, multi-window

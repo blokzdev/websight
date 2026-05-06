@@ -531,15 +531,43 @@ class SystemUiFeature {
   final SystemUiBar navigationBar;
   final bool injectSafeAreaCss;
 
+  /// When `true` (default), the safe-area shim also adds
+  /// `padding: env(safe-area-inset-*)` to `<body>` so wrapped sites that
+  /// don't natively account for safe-area insets don't get their content
+  /// (logos, sticky headers) sliding under the transparent system bars.
+  ///
+  /// Sites that DO handle insets themselves should disable this
+  /// (`auto_pad_body: false`) to avoid double-padding. Sites with elaborate
+  /// `position: fixed` headers may still need a custom CSS injection — body
+  /// padding only addresses content in normal flow.
+  final bool autoPadBody;
+
+  /// Which edges of `<body>` get safe-area padding when [autoPadBody] is on.
+  /// Members are any of: `top`, `bottom`, `left`, `right`. The defaults
+  /// (`top`, `bottom`) cover the status bar and gesture / nav bar — the
+  /// only edges that overlap content in the common portrait orientation.
+  /// `left` / `right` matter only on landscape with side-notched displays.
+  final Set<String> autoPadEdges;
+
   const SystemUiFeature({
     required this.mode,
     required this.statusBar,
     required this.navigationBar,
     required this.injectSafeAreaCss,
+    required this.autoPadBody,
+    required this.autoPadEdges,
   });
 
   bool get isEdgeToEdge => mode == 'edge_to_edge';
   bool get isImmersive => mode == 'immersive_sticky' || mode == 'leanback';
+
+  static const Set<String> _defaultPadEdges = <String>{'top', 'bottom'};
+  static const Set<String> _validPadEdges = <String>{
+    'top',
+    'bottom',
+    'left',
+    'right',
+  };
 
   factory SystemUiFeature.fromMap(Map<String, dynamic>? map) {
     if (map == null) {
@@ -548,6 +576,8 @@ class SystemUiFeature {
         statusBar: SystemUiBar.fromMap(null, defaultTransparent: true),
         navigationBar: SystemUiBar.fromMap(null, defaultTransparent: true),
         injectSafeAreaCss: true,
+        autoPadBody: true,
+        autoPadEdges: _defaultPadEdges,
       );
     }
     final mode = _str(map['mode'], fallback: 'edge_to_edge');
@@ -563,7 +593,22 @@ class SystemUiFeature {
         defaultTransparent: transparentDefault,
       ),
       injectSafeAreaCss: _bool(map['inject_safe_area_css'], fallback: true),
+      autoPadBody: _bool(map['auto_pad_body'], fallback: true),
+      autoPadEdges: _padEdges(map['auto_pad_edges']),
     );
+  }
+
+  /// Filters a YAML list down to known edge names. Unknown values are
+  /// dropped silently (debug log lives in the controller).
+  static Set<String> _padEdges(Object? raw) {
+    if (raw == null) return _defaultPadEdges;
+    final list = _strList(raw);
+    if (list.isEmpty) return const <String>{};
+    final filtered = list
+        .map((e) => e.toLowerCase())
+        .where(_validPadEdges.contains)
+        .toSet();
+    return filtered;
   }
 }
 

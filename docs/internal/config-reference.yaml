@@ -331,10 +331,20 @@ webview_config:
         visible: true
         transparent: true
         icon_brightness: "auto"
-      # Inject `viewport-fit=cover` + `--websight-safe-*` CSS variables so
-      # the wrapped site can pad its own header/footer with
+      # ✅ Inject `viewport-fit=cover` + `--websight-safe-*` CSS variables
+      # so the wrapped site can pad its own header/footer with
       # `env(safe-area-inset-*)` / `var(--websight-safe-top)` and friends.
       inject_safe_area_css: true
+
+      # ✅ Defensive auto-padding on `<body>` for sites that don't natively
+      # respect `env(safe-area-inset-*)`. Wrapped in `@supports`, so older
+      # engines ignore the rule. Disable for sites that already handle
+      # insets (otherwise the padding stacks).
+      auto_pad_body: true
+      # ✅ Subset of `top` / `bottom` / `left` / `right`. Defaults pad the
+      # status bar (top) and gesture/nav bar (bottom). Add `left`/`right`
+      # when shipping a landscape-friendly app on side-notched displays.
+      auto_pad_edges: ["top", "bottom"]
 
     layout:
       # ✅ One of: drawer | bottom_tabs | none. (top_tabs is reserved.)

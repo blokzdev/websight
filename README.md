@@ -37,8 +37,11 @@ template** to spin up your app, not a runtime.
   (`flutter_ui.system_ui.mode: edge_to_edge`), so the wrapped site fills
   the screen instead of looking like an embed. `viewport-fit=cover` and
   `--websight-safe-*` CSS variables are auto-injected so the site can
-  inset its own header/footer with `env(safe-area-inset-*)`. Set
-  `mode: default` for the standard "shell with chrome" look.
+  inset its own header/footer with `env(safe-area-inset-*)`. A
+  defensive `<body>` auto-pad (configurable via
+  `system_ui.auto_pad_body` + `auto_pad_edges`) catches sites that
+  don't natively read insets. Set `mode: default` for the standard
+  "shell with chrome" look.
 - **In-page features that actually work**: OAuth popups (`window.open` →
   Flutter modal WebView, auto-closes when the provider redirects home),
   HTML5 `<video>` fullscreen, in-page camera / mic /

@@ -89,6 +89,48 @@ await WebSightBridge.registerHttpDownload(
 
 You usually don't need to call this directly — see auto-detect below.
 
+## Safe-area handling (transparent system bars)
+
+When `flutter_ui.system_ui.mode` is `edge_to_edge` (the default), the
+WebView paints under the transparent status / navigation bars. To stop
+the wrapped site's content from sliding under those bars, WebSight
+injects two CSS layers on every `pageFinished`:
+
+1. **CSS variable shim** (always on when `inject_safe_area_css: true`).
+   Adds `viewport-fit=cover` to the page's viewport meta and defines
+   `--websight-safe-top` / `--websight-safe-bottom` /
+   `--websight-safe-left` / `--websight-safe-right` on `:root`. Sites
+   that want surgical control can read these directly:
+
+   ```css
+   .my-fixed-header {
+     padding-top: var(--websight-safe-top);
+   }
+   ```
+
+2. **Defensive `<body>` padding** (default on; controlled by
+   `auto_pad_body` + `auto_pad_edges`). Sites that don't read
+   `env(safe-area-inset-*)` natively get auto-padded so their normal-
+   flow content (logos, sticky-in-flow headers, footers) doesn't
+   overlap the transparent bars.
+
+   ```yaml
+   flutter_ui:
+     system_ui:
+       auto_pad_body: true
+       auto_pad_edges: ["top", "bottom"]
+   ```
+
+   Disable when the wrapped site already respects insets (Tailwind
+   apps, mobile-first frameworks, anything tested on iOS notched
+   devices) — otherwise the body pad stacks on top of the site's own
+   pad, leaving a visible blank strip.
+
+Sites with `position: fixed` headers may still need a custom CSS
+injection (the body pad only affects normal-flow content). Use the
+existing `webview_settings.custom_user_scripts.inject_css` mechanism
+with rules that target the fixed elements directly.
+
 ## In-page WebView permissions
 
 Some pages call browser APIs that need an OS permission — `getUserMedia`

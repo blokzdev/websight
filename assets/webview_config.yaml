@@ -92,6 +92,18 @@ flutter_ui:
     # the site already declares viewport-fit and you don't want extra meta.
     inject_safe_area_css: true
 
+    # Defensive auto-padding on `<body>` so sites that DON'T natively
+    # respect `env(safe-area-inset-*)` don't have their content (logos,
+    # sticky headers in normal flow, footers) slide under the transparent
+    # status / nav bars. Wrapped in an `@supports` block so older engines
+    # ignore it. Disable when the wrapped site handles insets itself, or
+    # tighten `auto_pad_edges` if only specific edges overlap.
+    auto_pad_body: true
+    # Edges to pad: any of `top`, `bottom`, `left`, `right`. Defaults to
+    # the two that overlap content in portrait. `left`/`right` matter only
+    # in landscape on side-notched devices.
+    auto_pad_edges: ["top", "bottom"]
+
   layout:
     # The main navigation style for the app.
     # Options: "drawer", "bottom_tabs", "top_tabs", "none"

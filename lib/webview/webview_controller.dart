@@ -357,7 +357,18 @@ class WebsightWebViewController extends ChangeNotifier {
   /// layout. Without `viewport-fit=cover` Chrome will not fire
   /// `env(safe-area-inset-*)` — sites get a blank inset and overlap the
   /// transparent system bars.
+  ///
+  /// Two passes:
+  ///   1. `:root` CSS variables (`--websight-safe-*`) so the wrapped site
+  ///      can pad its own elements. Always on when `inject_safe_area_css`.
+  ///   2. Optional `<body>` padding using `env(safe-area-inset-*)` for the
+  ///      configured edges. This is the "just works" defense for sites
+  ///      that don't natively respect insets — most of the public web,
+  ///      including older blockchain explorers, news sites, etc.
   Future<void> _injectSafeAreaShim() async {
+    final ui = features.systemUi;
+    final padBody = ui.autoPadBody && ui.autoPadEdges.isNotEmpty;
+    final padEdgesJson = jsonEncode(ui.autoPadEdges.toList()..sort());
     try {
       await controller.runJavaScript('''
 (function () {
@@ -379,15 +390,33 @@ class WebsightWebViewController extends ChangeNotifier {
       meta.content = 'width=device-width, initial-scale=1, viewport-fit=cover';
       document.head.appendChild(meta);
     }
-    var style = document.createElement('style');
-    style.setAttribute('data-websight-safearea', '1');
-    style.appendChild(document.createTextNode(
-      ':root { ' +
+    var css = ':root { ' +
       '--websight-safe-top: env(safe-area-inset-top, 0px); ' +
       '--websight-safe-bottom: env(safe-area-inset-bottom, 0px); ' +
       '--websight-safe-left: env(safe-area-inset-left, 0px); ' +
-      '--websight-safe-right: env(safe-area-inset-right, 0px); }'
-    ));
+      '--websight-safe-right: env(safe-area-inset-right, 0px); }';
+    if ($padBody) {
+      var edges = $padEdgesJson;
+      var pad = function (e) {
+        return edges.indexOf(e) >= 0
+          ? 'env(safe-area-inset-' + e + ', 0px)'
+          : '0px';
+      };
+      // @supports gate: skip on engines that don't grok env() at all so
+      // we don't emit an invalid declaration. Box-sizing left at default
+      // intentionally — overriding to border-box can shift sites that
+      // already assume content-box body width.
+      css += '@supports (padding: env(safe-area-inset-top)) {' +
+        ' body {' +
+        ' padding-top: ' + pad('top') + ';' +
+        ' padding-bottom: ' + pad('bottom') + ';' +
+        ' padding-left: ' + pad('left') + ';' +
+        ' padding-right: ' + pad('right') + ';' +
+        ' } }';
+    }
+    var style = document.createElement('style');
+    style.setAttribute('data-websight-safearea', '1');
+    style.appendChild(document.createTextNode(css));
     document.head.appendChild(style);
   } catch (e) {}
 })();

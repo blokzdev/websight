@@ -53,7 +53,14 @@ flutter_ui:
       visible: true
       transparent: true
       icon_brightness: "auto"
+    # The shim adds CSS variables for the wrapped site to use itself,
+    # AND defensively pads `<body>` for sites that don't read insets.
+    # Set `auto_pad_body: false` if Blockchair already handles its own
+    # safe-area insets (pad would then be additive and visible as an
+    # extra strip).
     inject_safe_area_css: true
+    auto_pad_body: true
+    auto_pad_edges: ["top", "bottom"]
 
   # No native chrome at all — the wrapped site IS the UI. Want a refresh
   # button? Use pull-to-refresh (configured per-route below) or wire it
