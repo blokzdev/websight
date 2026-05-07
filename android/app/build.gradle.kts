@@ -111,10 +111,10 @@ dependencies {
     // camera_android_camerax Flutter plugin pulls transitively; Gradle would
     // resolve to the higher version anyway, but pinning matches keeps the
     // AAR-metadata check happy.
-    implementation("androidx.camera:camera-core:1.5.1")
-    implementation("androidx.camera:camera-camera2:1.5.1")
-    implementation("androidx.camera:camera-lifecycle:1.5.1")
-    implementation("androidx.camera:camera-view:1.5.1")
+    implementation("androidx.camera:camera-core:1.6.0")
+    implementation("androidx.camera:camera-camera2:1.6.0")
+    implementation("androidx.camera:camera-lifecycle:1.6.0")
+    implementation("androidx.camera:camera-view:1.6.0")
 
     // Guava brings `com.google.common.util.concurrent.ListenableFuture`,
     // which `ProcessCameraProvider.getInstance()` returns. Without it on
