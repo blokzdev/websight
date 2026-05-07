@@ -291,4 +291,211 @@ void main() {
       expect(f.errorPages.retryButton, isTrue);
     });
   });
+
+  group('SystemUiFeature', () {
+    test('defaults to edge_to_edge with transparent bars', () {
+      final s = SystemUiFeature.fromMap(null);
+      expect(s.mode, 'edge_to_edge');
+      expect(s.isEdgeToEdge, isTrue);
+      expect(s.statusBar.transparent, isTrue);
+      expect(s.statusBar.iconBrightness, 'auto');
+      expect(s.navigationBar.transparent, isTrue);
+      expect(s.injectSafeAreaCss, isTrue);
+    });
+
+    test('default mode keeps bars opaque unless explicitly transparent', () {
+      final s = SystemUiFeature.fromMap(<String, dynamic>{'mode': 'default'});
+      expect(s.mode, 'default');
+      expect(s.isEdgeToEdge, isFalse);
+      expect(s.statusBar.transparent, isFalse);
+      expect(s.navigationBar.transparent, isFalse);
+    });
+
+    test('explicit per-bar overrides take precedence', () {
+      final s = SystemUiFeature.fromMap(<String, dynamic>{
+        'mode': 'edge_to_edge',
+        'status_bar': {
+          'visible': false,
+          'transparent': false,
+          'icon_brightness': 'light',
+        },
+        'navigation_bar': {'visible': true, 'icon_brightness': 'dark'},
+        'inject_safe_area_css': false,
+      });
+      expect(s.statusBar.visible, isFalse);
+      expect(s.statusBar.transparent, isFalse);
+      expect(s.statusBar.iconBrightness, 'light');
+      expect(s.navigationBar.iconBrightness, 'dark');
+      expect(s.injectSafeAreaCss, isFalse);
+    });
+
+    test('immersive_sticky / leanback report isImmersive', () {
+      expect(
+        SystemUiFeature.fromMap(<String, dynamic>{'mode': 'immersive_sticky'})
+            .isImmersive,
+        isTrue,
+      );
+      expect(
+        SystemUiFeature.fromMap(<String, dynamic>{'mode': 'leanback'})
+            .isImmersive,
+        isTrue,
+      );
+      expect(SystemUiFeature.fromMap(null).isImmersive, isFalse);
+    });
+
+    group('auto_pad_body / auto_pad_edges', () {
+      test('defaults to enabled with top + bottom edges', () {
+        final s = SystemUiFeature.fromMap(null);
+        expect(s.autoPadBody, isTrue);
+        expect(s.autoPadEdges, <String>{'top', 'bottom'});
+      });
+
+      test('explicit disable wins over defaults', () {
+        final s = SystemUiFeature.fromMap(<String, dynamic>{
+          'auto_pad_body': false,
+        });
+        expect(s.autoPadBody, isFalse);
+        // Edges retain default (still parseable; controller gates on
+        // autoPadBody anyway).
+        expect(s.autoPadEdges, <String>{'top', 'bottom'});
+      });
+
+      test('explicit edges replace defaults', () {
+        final s = SystemUiFeature.fromMap(<String, dynamic>{
+          'auto_pad_edges': ['top', 'left', 'right'],
+        });
+        expect(s.autoPadEdges, <String>{'top', 'left', 'right'});
+      });
+
+      test('unknown edge names are dropped', () {
+        final s = SystemUiFeature.fromMap(<String, dynamic>{
+          'auto_pad_edges': ['top', 'topp', 'BOTTOM', 'middle', 'left'],
+        });
+        // `BOTTOM` is normalized to lowercase; `topp`/`middle` are dropped.
+        expect(s.autoPadEdges, <String>{'top', 'bottom', 'left'});
+      });
+
+      test('empty list disables padding even with auto_pad_body=true', () {
+        final s = SystemUiFeature.fromMap(<String, dynamic>{
+          'auto_pad_body': true,
+          'auto_pad_edges': <String>[],
+        });
+        expect(s.autoPadBody, isTrue);
+        expect(s.autoPadEdges, isEmpty);
+      });
+    });
+  });
+
+  group('MultiWindowFeature', () {
+    test('defaults to enabled with auto-close + parent reload', () {
+      final m = MultiWindowFeature.fromMap(null);
+      expect(m.enabled, isTrue);
+      expect(m.closeOnParentHost, isTrue);
+      expect(m.reloadParentOnClose, isTrue);
+    });
+
+    test('respects explicit disable', () {
+      final m = MultiWindowFeature.fromMap(<String, dynamic>{
+        'enabled': false,
+        'close_on_parent_host': false,
+        'reload_parent_on_close': false,
+      });
+      expect(m.enabled, isFalse);
+      expect(m.closeOnParentHost, isFalse);
+      expect(m.reloadParentOnClose, isFalse);
+    });
+  });
+
+  group('FullscreenVideoFeature', () {
+    test('defaults to enabled, no orientation lock', () {
+      final f = FullscreenVideoFeature.fromMap(null);
+      expect(f.enabled, isTrue);
+      expect(f.lockLandscape, isFalse);
+    });
+
+    test('reads lock_landscape', () {
+      final f = FullscreenVideoFeature.fromMap(<String, dynamic>{
+        'lock_landscape': true,
+      });
+      expect(f.lockLandscape, isTrue);
+    });
+  });
+
+  group('WebViewPermissionsFeature', () {
+    test('defaults: camera/mic/geo allowed; protected media denied', () {
+      final p = WebViewPermissionsFeature.fromMap(null);
+      expect(p.allowCamera, isTrue);
+      expect(p.allowMicrophone, isTrue);
+      expect(p.allowGeolocation, isTrue);
+      expect(p.allowProtectedMedia, isFalse);
+      expect(p.retainGeolocation, isFalse);
+    });
+
+    test('honours per-permission opt-outs', () {
+      final p = WebViewPermissionsFeature.fromMap(<String, dynamic>{
+        'allow_camera': false,
+        'allow_microphone': false,
+        'allow_geolocation': false,
+        'retain_geolocation': true,
+      });
+      expect(p.allowCamera, isFalse);
+      expect(p.allowMicrophone, isFalse);
+      expect(p.allowGeolocation, isFalse);
+      expect(p.retainGeolocation, isTrue);
+    });
+  });
+
+  group('WebSightFeatures.fromRaw — new sections', () {
+    test('reads system_ui under flutter_ui', () {
+      final raw = <String, dynamic>{
+        'flutter_ui': {
+          'system_ui': {
+            'mode': 'immersive_sticky',
+            'status_bar': {'icon_brightness': 'light'},
+          },
+        },
+      };
+      final f = WebSightFeatures.fromRaw(raw, appName: 'X');
+      expect(f.systemUi.mode, 'immersive_sticky');
+      expect(f.systemUi.statusBar.iconBrightness, 'light');
+    });
+
+    test('reads multi_window + fullscreen_video under webview_settings', () {
+      final raw = <String, dynamic>{
+        'webview_settings': {
+          'multi_window': {'enabled': false},
+          'fullscreen_video': {'enabled': true, 'lock_landscape': true},
+        },
+      };
+      final f = WebSightFeatures.fromRaw(raw, appName: 'X');
+      expect(f.multiWindow.enabled, isFalse);
+      expect(f.fullscreenVideo.enabled, isTrue);
+      expect(f.fullscreenVideo.lockLandscape, isTrue);
+    });
+
+    test('reads permissions.webview', () {
+      final raw = <String, dynamic>{
+        'permissions': {
+          'webview': {
+            'allow_camera': false,
+            'allow_protected_media': true,
+          },
+        },
+      };
+      final f = WebSightFeatures.fromRaw(raw, appName: 'X');
+      expect(f.webviewPermissions.allowCamera, isFalse);
+      expect(f.webviewPermissions.allowProtectedMedia, isTrue);
+      // Defaults preserved for keys not present.
+      expect(f.webviewPermissions.allowMicrophone, isTrue);
+      expect(f.webviewPermissions.allowGeolocation, isTrue);
+    });
+
+    test('missing sections fall back to immersive defaults', () {
+      final f = WebSightFeatures.fromRaw(<String, dynamic>{}, appName: 'X');
+      expect(f.systemUi.mode, 'edge_to_edge');
+      expect(f.multiWindow.enabled, isTrue);
+      expect(f.fullscreenVideo.enabled, isTrue);
+      expect(f.webviewPermissions.allowCamera, isTrue);
+    });
+  });
 }
