@@ -89,6 +89,116 @@ await WebSightBridge.registerHttpDownload(
 
 You usually don't need to call this directly — see auto-detect below.
 
+## Safe-area handling (transparent system bars)
+
+When `flutter_ui.system_ui.mode` is `edge_to_edge` (the default), the
+WebView paints under the transparent status / navigation bars. To stop
+the wrapped site's content from sliding under those bars, WebSight
+injects two CSS layers on every `pageFinished`:
+
+1. **CSS variable shim** (always on when `inject_safe_area_css: true`).
+   Adds `viewport-fit=cover` to the page's viewport meta and defines
+   `--websight-safe-top` / `--websight-safe-bottom` /
+   `--websight-safe-left` / `--websight-safe-right` on `:root`. Sites
+   that want surgical control can read these directly:
+
+   ```css
+   .my-fixed-header {
+     padding-top: var(--websight-safe-top);
+   }
+   ```
+
+2. **Defensive `<body>` padding** (default on; controlled by
+   `auto_pad_body` + `auto_pad_edges`). Sites that don't read
+   `env(safe-area-inset-*)` natively get auto-padded so their normal-
+   flow content (logos, sticky-in-flow headers, footers) doesn't
+   overlap the transparent bars.
+
+   ```yaml
+   flutter_ui:
+     system_ui:
+       auto_pad_body: true
+       auto_pad_edges: ["top", "bottom"]
+   ```
+
+   Disable when the wrapped site already respects insets (Tailwind
+   apps, mobile-first frameworks, anything tested on iOS notched
+   devices) — otherwise the body pad stacks on top of the site's own
+   pad, leaving a visible blank strip.
+
+Sites with `position: fixed` headers may still need a custom CSS
+injection (the body pad only affects normal-flow content). Use the
+existing `webview_settings.custom_user_scripts.inject_css` mechanism
+with rules that target the fixed elements directly.
+
+## In-page WebView permissions
+
+Some pages call browser APIs that need an OS permission — `getUserMedia`
+for camera / mic, `navigator.geolocation` for location. WebSight wires
+the WebView's permission-request callbacks to `permission_handler` so
+the user sees a single Android prompt instead of a separate WebView
+dialog.
+
+Configured under `permissions.webview` in `webview_config.yaml`:
+
+```yaml
+permissions:
+  webview:
+    allow_camera: true
+    allow_microphone: true
+    allow_geolocation: true
+    allow_protected_media: false
+    retain_geolocation: false   # remember per-origin grant
+```
+
+Set any flag to `false` to deny that resource at the WebSight layer
+without ever prompting the OS. The page's `getUserMedia` Promise (or
+`navigator.geolocation` callback) rejects in that case, the same way
+the browser would reject if the user clicked "block".
+
+The native scanner bridge (`scanBarcode()` above) still works
+independently — it's a separate flow that takes the user to a
+purpose-built ML Kit scanner.
+
+## Multi-window popups (OAuth)
+
+Pages that call `window.open(url)` (the standard pattern for "Sign in
+with Google / Microsoft / Twitter / Facebook") get their popup routed
+into a Flutter modal `WebView` route. WebSight's interceptor watches
+for navigation back to a host in `security.restrict_to_hosts` and
+auto-closes the popup when the OAuth provider redirects home.
+
+Configure under `webview_settings.multi_window`:
+
+```yaml
+webview_settings:
+  multi_window:
+    enabled: true
+    close_on_parent_host: true
+    reload_parent_on_close: true
+```
+
+Pages don't need to do anything different — the existing
+`window.open(authorizeUrl)` call routes through the bridge transparently.
+
+The internal bridge method `openPopup` is reserved for this flow and
+does not need to appear in `js_bridge.methods`.
+
+## HTML5 fullscreen video
+
+Tapping the fullscreen icon on a `<video>` element calls the page's
+fullscreen handler, which goes through `WebChromeClient.onShowCustomView`.
+WebSight hosts the platform widget in a black-backed fullscreen overlay,
+locks orientation if configured, and restores everything on
+`document.exitFullscreen()` or system back.
+
+```yaml
+webview_settings:
+  fullscreen_video:
+    enabled: true
+    lock_landscape: false
+```
+
 ## Auto-detect
 
 When `downloads.enabled` and `downloads.use_android_download_manager` are

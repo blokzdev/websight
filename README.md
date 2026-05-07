@@ -13,7 +13,8 @@ native shell, JS bridge, AdMob + UMP consent, in-app updates, FCM,
 in-app purchases, and analytics — all without writing platform code.
 
 WebSight is **Android-only** (iOS is on the v1.x roadmap) and is
-distributed as a fork-the-template starter, not a runtime.
+distributed as a GitHub template repository — click **Use this
+template** to spin up your app, not a runtime.
 
 > **Quick start:** click **[Use this template](https://github.com/blokzdev/websight/generate)**
 > on GitHub, clone your new repo, run `dart run tool/init.dart`, and
@@ -32,6 +33,20 @@ distributed as a fork-the-template starter, not a runtime.
 
 ## What you get
 
+- **Native-feel by default**: edge-to-edge with transparent system bars
+  (`flutter_ui.system_ui.mode: edge_to_edge`), so the wrapped site fills
+  the screen instead of looking like an embed. `viewport-fit=cover` and
+  `--websight-safe-*` CSS variables are auto-injected so the site can
+  inset its own header/footer with `env(safe-area-inset-*)`. A
+  defensive `<body>` auto-pad (configurable via
+  `system_ui.auto_pad_body` + `auto_pad_edges`) catches sites that
+  don't natively read insets. Set `mode: default` for the standard
+  "shell with chrome" look.
+- **In-page features that actually work**: OAuth popups (`window.open` →
+  Flutter modal WebView, auto-closes when the provider redirects home),
+  HTML5 `<video>` fullscreen, in-page camera / mic /
+  `navigator.geolocation` prompts (one Android dialog, no separate
+  WebView popup). All toggleable in YAML.
 - **One YAML file**: theme, layout (drawer / bottom tabs / top tabs / none),
   app bar actions, drawer / FAB, deep links, host allowlist, ads,
   analytics, FCM, in-app updates, in-app purchases, splash, offline
@@ -73,15 +88,22 @@ smoke build. Re-runnable.
 The condensed manual flow is below; the canonical end-to-end guide
 (toolchain, identity, icons, splash, Firebase, AdMob, signing, Play
 Console, trademark/ToS guidance) lives in
-**[docs/WHITELABEL.md](./docs/WHITELABEL.md)**. Drop-in starter configs
-live in [examples/](./examples/). Run `dart run tool/doctor.dart` any
-time to survey project state.
+**[docs/WHITELABEL.md](./docs/WHITELABEL.md)**. Common questions
+(template vs fork, pulling upstream updates, multi-environment, what
+the license allows, etc.) are in **[docs/FAQ.md](./docs/FAQ.md)**.
+Drop-in starter configs live in [examples/](./examples/). Run
+`dart run tool/doctor.dart` any time to survey project state.
 
-### 1. Fork or clone
+### 1. Start your project
 
-Each app you ship is an independent fork. Duplicate the `websight`
-folder for each project. (Or use GitHub's "Use this template" button
-once the repo has the template flag set.)
+Click **[Use this template](https://github.com/blokzdev/websight/generate)**
+on GitHub → "Create a new repository". This gives you a fresh repo
+with no shared history, which you can keep private. Then clone your
+new repo locally.
+
+(Plain `git clone` or **Fork** also work — fork only if you intend
+to send fixes back upstream. Each app you ship is an independent
+project.)
 
 ### 2. Install dependencies
 
