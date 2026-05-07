@@ -135,7 +135,7 @@ dependencies {
     implementation("com.google.android.play:integrity:1.4.0")
 
     // FileProvider, browser custom tabs
-    implementation("androidx.browser:browser:1.8.0")
+    implementation("androidx.browser:browser:1.10.0")
 
     // Firebase Messaging (used directly by WebSightMessagingService).
     // The firebase_messaging Flutter plugin uses `implementation` for its
