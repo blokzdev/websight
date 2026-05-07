@@ -475,6 +475,239 @@ class LegalFeature {
   }
 }
 
+/// How the system status / navigation bars are configured. Controls
+/// `SystemChrome.setEnabledSystemUIMode` + `setSystemUIOverlayStyle`.
+///
+/// `mode`:
+///   - `default`           — Flutter's default (system bars opaque, layout
+///                           insets respected). Use when the wrapped site
+///                           expects browser-like chrome.
+///   - `edge_to_edge`      — Window draws under transparent system bars; the
+///                           default for WebSight v1.1+. Pairs with
+///                           `extendBodyBehindAppBar` in the shell.
+///   - `immersive_sticky`  — System bars hidden until the user swipes; bars
+///                           overlay rather than push content. Good for
+///                           media-heavy sites.
+///   - `leanback`          — Bars hidden, no swipe-to-reveal (TV / kiosk).
+///
+/// Per-bar `icon_brightness` of `auto` derives from the active theme: a
+/// `dark` theme yields `light` icons (so they're visible on dark surfaces)
+/// and vice versa.
+@immutable
+class SystemUiBar {
+  final bool visible;
+  final bool transparent;
+  final String iconBrightness; // auto | light | dark
+
+  const SystemUiBar({
+    required this.visible,
+    required this.transparent,
+    required this.iconBrightness,
+  });
+
+  factory SystemUiBar.fromMap(
+    Map<String, dynamic>? map, {
+    required bool defaultTransparent,
+  }) {
+    if (map == null) {
+      return SystemUiBar(
+        visible: true,
+        transparent: defaultTransparent,
+        iconBrightness: 'auto',
+      );
+    }
+    return SystemUiBar(
+      visible: _bool(map['visible'], fallback: true),
+      transparent: _bool(map['transparent'], fallback: defaultTransparent),
+      iconBrightness: _str(map['icon_brightness'], fallback: 'auto'),
+    );
+  }
+}
+
+@immutable
+class SystemUiFeature {
+  final String mode; // default | edge_to_edge | immersive_sticky | leanback
+  final SystemUiBar statusBar;
+  final SystemUiBar navigationBar;
+  final bool injectSafeAreaCss;
+
+  /// When `true` (default), the safe-area shim also adds
+  /// `padding: env(safe-area-inset-*)` to `<body>` so wrapped sites that
+  /// don't natively account for safe-area insets don't get their content
+  /// (logos, sticky headers) sliding under the transparent system bars.
+  ///
+  /// Sites that DO handle insets themselves should disable this
+  /// (`auto_pad_body: false`) to avoid double-padding. Sites with elaborate
+  /// `position: fixed` headers may still need a custom CSS injection — body
+  /// padding only addresses content in normal flow.
+  final bool autoPadBody;
+
+  /// Which edges of `<body>` get safe-area padding when [autoPadBody] is on.
+  /// Members are any of: `top`, `bottom`, `left`, `right`. The defaults
+  /// (`top`, `bottom`) cover the status bar and gesture / nav bar — the
+  /// only edges that overlap content in the common portrait orientation.
+  /// `left` / `right` matter only on landscape with side-notched displays.
+  final Set<String> autoPadEdges;
+
+  const SystemUiFeature({
+    required this.mode,
+    required this.statusBar,
+    required this.navigationBar,
+    required this.injectSafeAreaCss,
+    required this.autoPadBody,
+    required this.autoPadEdges,
+  });
+
+  bool get isEdgeToEdge => mode == 'edge_to_edge';
+  bool get isImmersive => mode == 'immersive_sticky' || mode == 'leanback';
+
+  static const Set<String> _defaultPadEdges = <String>{'top', 'bottom'};
+  static const Set<String> _validPadEdges = <String>{
+    'top',
+    'bottom',
+    'left',
+    'right',
+  };
+
+  factory SystemUiFeature.fromMap(Map<String, dynamic>? map) {
+    if (map == null) {
+      return SystemUiFeature(
+        mode: 'edge_to_edge',
+        statusBar: SystemUiBar.fromMap(null, defaultTransparent: true),
+        navigationBar: SystemUiBar.fromMap(null, defaultTransparent: true),
+        injectSafeAreaCss: true,
+        autoPadBody: true,
+        autoPadEdges: _defaultPadEdges,
+      );
+    }
+    final mode = _str(map['mode'], fallback: 'edge_to_edge');
+    final transparentDefault = mode != 'default';
+    return SystemUiFeature(
+      mode: mode,
+      statusBar: SystemUiBar.fromMap(
+        _typed<Map<String, dynamic>>(map['status_bar']),
+        defaultTransparent: transparentDefault,
+      ),
+      navigationBar: SystemUiBar.fromMap(
+        _typed<Map<String, dynamic>>(map['navigation_bar']),
+        defaultTransparent: transparentDefault,
+      ),
+      injectSafeAreaCss: _bool(map['inject_safe_area_css'], fallback: true),
+      autoPadBody: _bool(map['auto_pad_body'], fallback: true),
+      autoPadEdges: _padEdges(map['auto_pad_edges']),
+    );
+  }
+
+  /// Filters a YAML list down to known edge names. Unknown values are
+  /// dropped silently (debug log lives in the controller).
+  static Set<String> _padEdges(Object? raw) {
+    if (raw == null) return _defaultPadEdges;
+    final list = _strList(raw);
+    if (list.isEmpty) return const <String>{};
+    final filtered =
+        list.map((e) => e.toLowerCase()).where(_validPadEdges.contains).toSet();
+    return filtered;
+  }
+}
+
+/// Multi-window popup config. Most sites that "open in a new tab" for OAuth
+/// (Google / Microsoft / Twitter / Facebook sign-in dialogs) call
+/// `window.open(url)`. webview_flutter_android does not expose a public
+/// `onCreateWindow` API, so we intercept `window.open` from injected JS and
+/// route the URL into a Flutter-side popup `WebView` route.
+@immutable
+class MultiWindowFeature {
+  final bool enabled;
+  final bool closeOnParentHost;
+  final bool reloadParentOnClose;
+
+  const MultiWindowFeature({
+    required this.enabled,
+    required this.closeOnParentHost,
+    required this.reloadParentOnClose,
+  });
+
+  factory MultiWindowFeature.fromMap(Map<String, dynamic>? map) {
+    if (map == null) {
+      return const MultiWindowFeature(
+        enabled: true,
+        closeOnParentHost: true,
+        reloadParentOnClose: true,
+      );
+    }
+    return MultiWindowFeature(
+      enabled: _bool(map['enabled'], fallback: true),
+      closeOnParentHost: _bool(map['close_on_parent_host'], fallback: true),
+      reloadParentOnClose: _bool(map['reload_parent_on_close'], fallback: true),
+    );
+  }
+}
+
+@immutable
+class FullscreenVideoFeature {
+  final bool enabled;
+  final bool lockLandscape;
+
+  const FullscreenVideoFeature({
+    required this.enabled,
+    required this.lockLandscape,
+  });
+
+  factory FullscreenVideoFeature.fromMap(Map<String, dynamic>? map) {
+    if (map == null) {
+      return const FullscreenVideoFeature(
+        enabled: true,
+        lockLandscape: false,
+      );
+    }
+    return FullscreenVideoFeature(
+      enabled: _bool(map['enabled'], fallback: true),
+      lockLandscape: _bool(map['lock_landscape']),
+    );
+  }
+}
+
+/// Allowlist for `WebChromeClient.onPermissionRequest` calls (HTML5
+/// `getUserMedia`, EME, geolocation prompts triggered by `navigator.*`).
+/// Default-deny would break in-page QR scanners / camera demos / mic input,
+/// so for a wrapper meant to forward an existing site, sensible defaults
+/// allow camera + mic + geo and gate `protected_media`.
+@immutable
+class WebViewPermissionsFeature {
+  final bool allowCamera;
+  final bool allowMicrophone;
+  final bool allowGeolocation;
+  final bool allowProtectedMedia;
+  final bool retainGeolocation;
+
+  const WebViewPermissionsFeature({
+    required this.allowCamera,
+    required this.allowMicrophone,
+    required this.allowGeolocation,
+    required this.allowProtectedMedia,
+    required this.retainGeolocation,
+  });
+
+  factory WebViewPermissionsFeature.fromMap(Map<String, dynamic>? map) {
+    if (map == null) {
+      return const WebViewPermissionsFeature(
+        allowCamera: true,
+        allowMicrophone: true,
+        allowGeolocation: true,
+        allowProtectedMedia: false,
+        retainGeolocation: false,
+      );
+    }
+    return WebViewPermissionsFeature(
+      allowCamera: _bool(map['allow_camera'], fallback: true),
+      allowMicrophone: _bool(map['allow_microphone'], fallback: true),
+      allowGeolocation: _bool(map['allow_geolocation'], fallback: true),
+      allowProtectedMedia: _bool(map['allow_protected_media']),
+      retainGeolocation: _bool(map['retain_geolocation']),
+    );
+  }
+}
+
 @immutable
 class WebSightFeatures {
   final SplashFeature splash;
@@ -490,6 +723,10 @@ class WebSightFeatures {
   final DrawerFeature drawer;
   final ErrorPagesFeature errorPages;
   final LegalFeature legal;
+  final SystemUiFeature systemUi;
+  final MultiWindowFeature multiWindow;
+  final FullscreenVideoFeature fullscreenVideo;
+  final WebViewPermissionsFeature webviewPermissions;
 
   const WebSightFeatures({
     required this.splash,
@@ -505,6 +742,10 @@ class WebSightFeatures {
     required this.drawer,
     required this.errorPages,
     required this.legal,
+    required this.systemUi,
+    required this.multiWindow,
+    required this.fullscreenVideo,
+    required this.webviewPermissions,
   });
 
   factory WebSightFeatures.fromRaw(
@@ -517,6 +758,7 @@ class WebSightFeatures {
     final layout = _typed<Map<String, dynamic>>(flutterUi?['layout']);
     final behaviorOverrides =
         _typed<Map<String, dynamic>>(raw['behavior_overrides']);
+    final permissions = _typed<Map<String, dynamic>>(raw['permissions']);
     return WebSightFeatures(
       splash:
           SplashFeature.fromMap(_typed<Map<String, dynamic>>(raw['splash'])),
@@ -544,6 +786,14 @@ class WebSightFeatures {
       errorPages: ErrorPagesFeature.fromMap(
           _typed<Map<String, dynamic>>(behaviorOverrides?['error_pages'])),
       legal: LegalFeature.fromMap(_typed<Map<String, dynamic>>(raw['legal'])),
+      systemUi: SystemUiFeature.fromMap(
+          _typed<Map<String, dynamic>>(flutterUi?['system_ui'])),
+      multiWindow: MultiWindowFeature.fromMap(
+          _typed<Map<String, dynamic>>(webviewSettings?['multi_window'])),
+      fullscreenVideo: FullscreenVideoFeature.fromMap(
+          _typed<Map<String, dynamic>>(webviewSettings?['fullscreen_video'])),
+      webviewPermissions: WebViewPermissionsFeature.fromMap(
+          _typed<Map<String, dynamic>>(permissions?['webview'])),
     );
   }
 }
