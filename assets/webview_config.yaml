@@ -60,9 +60,55 @@ flutter_ui:
     # (Optional) The name of a font from fonts.google.com to apply to all native UI.
     font_family: "Inter"
 
+  # ---------------------------------------------------------------------------
+  # [SYSTEM UI / IMMERSIVE FEEL]
+  # The point of WebSight is to make a wrapped site feel like a native app.
+  # Edge-to-edge is the default; the WebView paints under transparent system
+  # bars. Set `mode: "default"` to fall back to the standard "shell with
+  # opaque chrome" look (e.g. for kiosk or admin tools that want explicit
+  # bars).
+  # ---------------------------------------------------------------------------
+  system_ui:
+    # How the OS status / nav bars are handled.
+    #   default          - Flutter default; opaque bars push content.
+    #   edge_to_edge     - Window draws under transparent bars (RECOMMENDED).
+    #   immersive_sticky - Bars hidden, swipe to reveal (media-heavy sites).
+    #   leanback         - Bars hidden, no reveal (kiosk / TV).
+    mode: "edge_to_edge"
+
+    status_bar:
+      visible: true             # ignored under immersive_sticky / leanback
+      transparent: true         # let the WebView paint behind the bar
+      icon_brightness: "auto"   # auto | light | dark; auto follows theme
+
+    navigation_bar:
+      visible: true
+      transparent: true
+      icon_brightness: "auto"
+
+    # Inject `viewport-fit=cover` + a `--websight-safe-*` CSS variable shim
+    # so the wrapped site can pad its own header/footer with
+    # `env(safe-area-inset-top)` / `var(--websight-safe-top)`. Disable if
+    # the site already declares viewport-fit and you don't want extra meta.
+    inject_safe_area_css: true
+
+    # Defensive auto-padding on `<body>` so sites that DON'T natively
+    # respect `env(safe-area-inset-*)` don't have their content (logos,
+    # sticky headers in normal flow, footers) slide under the transparent
+    # status / nav bars. Wrapped in an `@supports` block so older engines
+    # ignore it. Disable when the wrapped site handles insets itself, or
+    # tighten `auto_pad_edges` if only specific edges overlap.
+    auto_pad_body: true
+    # Edges to pad: any of `top`, `bottom`, `left`, `right`. Defaults to
+    # the two that overlap content in portrait. `left`/`right` matter only
+    # in landscape on side-notched devices.
+    auto_pad_edges: ["top", "bottom"]
+
   layout:
     # The main navigation style for the app.
     # Options: "drawer", "bottom_tabs", "top_tabs", "none"
+    # NOTE: Set "none" (and `appbar.visible: false`) for the most native
+    # feel — the wrapped site provides its own UI; WebSight is invisible.
     scaffold: "drawer"
 
     appbar:
@@ -145,6 +191,23 @@ webview_settings:
   javascript_enabled: true
   dom_storage_enabled: true
 
+  # Multi-window popup support. Many OAuth providers (Google / Microsoft /
+  # Twitter / Facebook "Sign in with…") open the auth flow via
+  # `window.open()`. webview_flutter_android does not expose a public
+  # onCreateWindow API, so WebSight intercepts `window.open` from the
+  # wrapped page and routes the URL into a Flutter modal popup WebView.
+  multi_window:
+    enabled: true                # disable to suppress popups entirely
+    close_on_parent_host: true   # auto-close when popup hits a parent host
+    reload_parent_on_close: true # reload underlying page after popup closes
+
+  # HTML5 `<video>` fullscreen handler (the fullscreen icon in a video
+  # player calls WebChromeClient.onShowCustomView). Without this, the
+  # button does nothing.
+  fullscreen_video:
+    enabled: true
+    lock_landscape: false        # let the video / page decide orientation
+
 # -----------------------------------------------------------------------------
 # [JAVASCRIPT BRIDGE]
 # -----------------------------------------------------------------------------
@@ -178,6 +241,22 @@ security:
   # List of hosts the WebView is allowed to navigate to internally.
   restrict_to_hosts:
     - "flutter.dev"
+
+# -----------------------------------------------------------------------------
+# [WEBVIEW PERMISSIONS]
+# Allowlist for prompts the wrapped site can trigger via standard browser
+# APIs (`getUserMedia`, `navigator.geolocation`). The runtime OS-level
+# permission is requested via permission_handler at the moment the site
+# asks — so the user sees a single Android prompt, not a separate
+# WebView dialog.
+# -----------------------------------------------------------------------------
+permissions:
+  webview:
+    allow_camera: true
+    allow_microphone: true
+    allow_geolocation: true
+    allow_protected_media: false    # EME / DRM resource id; opt-in only
+    retain_geolocation: false       # remember the user's geo grant per origin
 
 # -----------------------------------------------------------------------------
 # [MONETIZATION & COMPLIANCE]
