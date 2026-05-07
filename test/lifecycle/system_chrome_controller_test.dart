@@ -11,16 +11,18 @@ void main() {
 
   setUp(() {
     calls = <MethodCall>[];
-    TestDefaultBinaryMessengerBinding.ensureInitialized()
+    TestWidgetsFlutterBinding.ensureInitialized()
         .defaultBinaryMessenger
-        .setMockMethodCallHandler(SystemChannels.platform, (call) async {
+        .setMockMethodCallHandler(SystemChannels.platform, (
+      MethodCall call,
+    ) async {
       calls.add(call);
       return null;
     });
   });
 
   tearDown(() {
-    TestDefaultBinaryMessengerBinding.ensureInitialized()
+    TestWidgetsFlutterBinding.ensureInitialized()
         .defaultBinaryMessenger
         .setMockMethodCallHandler(SystemChannels.platform, null);
   });
@@ -29,6 +31,13 @@ void main() {
     final controller = SystemChromeController(feature: feature);
     await controller.applyForBrightness(brightness);
   }
+
+  // Flutter's `SystemChrome.setEnabledSystemUIMode` decomposes into different
+  // platform-channel calls depending on the mode: non-manual modes invoke
+  // `SystemChrome.setEnabledSystemUIMode` with the mode name as a *String*
+  // payload, while `manual` skips that and instead invokes
+  // `SystemChrome.setEnabledSystemUIOverlays` with the overlays list. Tests
+  // below assert the right call shape for each mode.
 
   test('edge_to_edge calls SystemChrome.setEnabledSystemUIMode edgeToEdge',
       () async {
@@ -40,10 +49,7 @@ void main() {
       orElse: () => const MethodCall(''),
     );
     expect(modeCall.method, 'SystemChrome.setEnabledSystemUIMode');
-    expect(
-      (modeCall.arguments as Map)['mode'],
-      'SystemUiMode.edgeToEdge',
-    );
+    expect(modeCall.arguments, 'SystemUiMode.edgeToEdge');
   });
 
   test('immersive_sticky maps to SystemUiMode.immersiveSticky', () async {
@@ -51,12 +57,10 @@ void main() {
       SystemUiFeature.fromMap(<String, dynamic>{'mode': 'immersive_sticky'}),
       Brightness.dark,
     );
-    final modeCall = calls
-        .firstWhere((c) => c.method == 'SystemChrome.setEnabledSystemUIMode');
-    expect(
-      (modeCall.arguments as Map)['mode'],
-      'SystemUiMode.immersiveSticky',
+    final modeCall = calls.firstWhere(
+      (c) => c.method == 'SystemChrome.setEnabledSystemUIMode',
     );
+    expect(modeCall.arguments, 'SystemUiMode.immersiveSticky');
   });
 
   test('default mode maps to SystemUiMode.manual with both overlays', () async {
@@ -64,13 +68,14 @@ void main() {
       SystemUiFeature.fromMap(<String, dynamic>{'mode': 'default'}),
       Brightness.light,
     );
-    final modeCall = calls
-        .firstWhere((c) => c.method == 'SystemChrome.setEnabledSystemUIMode');
-    final args = modeCall.arguments as Map;
-    expect(args['mode'], 'SystemUiMode.manual');
-    final overlays = (args['overlays'] as List).cast<String>();
-    expect(overlays,
-        containsAll(<String>['SystemUiOverlay.top', 'SystemUiOverlay.bottom']));
+    final overlaysCall = calls.firstWhere(
+      (c) => c.method == 'SystemChrome.setEnabledSystemUIOverlays',
+    );
+    final overlays = (overlaysCall.arguments as List).cast<String>();
+    expect(
+      overlays,
+      containsAll(<String>['SystemUiOverlay.top', 'SystemUiOverlay.bottom']),
+    );
   });
 
   test('hiding the status bar drops it from the manual overlays', () async {
@@ -81,10 +86,10 @@ void main() {
       }),
       Brightness.dark,
     );
-    final modeCall = calls
-        .firstWhere((c) => c.method == 'SystemChrome.setEnabledSystemUIMode');
-    final args = modeCall.arguments as Map;
-    final overlays = (args['overlays'] as List).cast<String>();
+    final overlaysCall = calls.firstWhere(
+      (c) => c.method == 'SystemChrome.setEnabledSystemUIOverlays',
+    );
+    final overlays = (overlaysCall.arguments as List).cast<String>();
     expect(overlays.contains('SystemUiOverlay.top'), isFalse);
     expect(overlays.contains('SystemUiOverlay.bottom'), isTrue);
   });
