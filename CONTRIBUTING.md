@@ -2,8 +2,13 @@
 
 Thanks for your interest. This project is a small, opinionated template for
 turning a website into an Android app. The contribution surface is
-intentionally narrow: most customization happens in your fork's
-`webview_config.yaml`, not in core code.
+intentionally narrow: most customization happens in your downstream
+project's `webview_config.yaml`, not in core code.
+
+If you're shipping an app, generate a fresh repo via "Use this
+template" — you don't need to fork. **Fork** the repo only if you're
+sending a fix or feature back upstream; the rest of this doc covers
+that flow.
 
 ## Setup
 

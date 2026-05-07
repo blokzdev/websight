@@ -70,8 +70,21 @@ class _AppShellState extends State<AppShell> {
       onWebviewReload: signals.requestReload,
       onWebviewBack: signals.requestBack,
     );
+    final systemUi = widget.features.systemUi;
+    // When the system bars are transparent we extend the body behind them
+    // so the WebView paints edge-to-edge. The wrapped site can opt into
+    // safe-area-aware layout via the injected `env(safe-area-inset-*)`
+    // CSS shim. With opaque bars (mode == default + transparent: false)
+    // we keep the standard inset behavior.
+    final extendBehindBars = systemUi.statusBar.transparent ||
+        systemUi.navigationBar.transparent ||
+        systemUi.isEdgeToEdge ||
+        systemUi.isImmersive;
 
     return Scaffold(
+      extendBodyBehindAppBar: extendBehindBars && appbarVisible,
+      extendBody: extendBehindBars,
+      backgroundColor: extendBehindBars ? Colors.transparent : null,
       appBar: appbarVisible ? _buildAppBar(context, route, dispatcher) : null,
       drawer: layout == 'drawer' && widget.features.drawer.visible
           ? _buildDrawer(context, dispatcher)

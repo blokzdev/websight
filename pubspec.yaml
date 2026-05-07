@@ -10,7 +10,7 @@ dependencies:
   camera: ^0.11.3
   cupertino_icons: ^1.0.2
   device_info_plus: ^12.2.0
-  firebase_analytics: ^12.0.3
+  firebase_analytics: ^12.3.0
   firebase_core: ^4.2.0
   firebase_crashlytics: ^5.0.3
   firebase_messaging: ^16.0.3
@@ -20,7 +20,7 @@ dependencies:
   google_fonts: ^6.3.2
   google_mlkit_barcode_scanning: ^0.14.1
   google_mobile_ads: ^6.0.0
-  image_picker: ^1.0.7
+  image_picker: ^1.2.2
   in_app_purchase: ^3.2.0
   in_app_review: ^2.0.9
   in_app_update: ^4.2.2
@@ -43,7 +43,7 @@ dev_dependencies:
   flutter_native_splash: ^2.4.4
   flutter_test:
     sdk: flutter
-  json_serializable: ^6.7.1
+  json_serializable: ^6.13.1
   mason_logger: ^0.3.0       # used by tool/init.dart for the rich TUI mode
 
 flutter:
