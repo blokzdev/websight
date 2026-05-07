@@ -17,7 +17,7 @@ dependencies:
   flutter:
     sdk: flutter
   go_router: ^17.2.3
-  google_fonts: ^6.3.2
+  google_fonts: ^8.1.0
   google_mlkit_barcode_scanning: ^0.14.1
   google_mobile_ads: ^6.0.0
   image_picker: ^1.2.2
