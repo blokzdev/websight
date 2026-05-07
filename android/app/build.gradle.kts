@@ -1,5 +1,6 @@
 import java.util.Properties
 import java.io.FileInputStream
+import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 
 plugins {
     id("com.android.application")
@@ -23,10 +24,6 @@ android {
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_17
         targetCompatibility = JavaVersion.VERSION_17
-    }
-
-    kotlinOptions {
-        jvmTarget = JavaVersion.VERSION_17.toString()
     }
 
     sourceSets {
@@ -85,6 +82,17 @@ android {
                 "/META-INF/NOTICE.txt"
             )
         }
+    }
+}
+
+// Kotlin Gradle Plugin's modern DSL. Replaces the legacy
+// `kotlinOptions { jvmTarget = "17" }` block (deprecated in Kotlin 2.0,
+// hard error from Kotlin 2.3 onward — see https://kotl.in/u1r8ln).
+// Works on KGP 1.9+, so this stays compatible with both the current
+// 2.1.20 and the dependabot-proposed 2.3.21 bump.
+kotlin {
+    compilerOptions {
+        jvmTarget = JvmTarget.JVM_17
     }
 }
 
