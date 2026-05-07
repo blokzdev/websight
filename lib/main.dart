@@ -109,8 +109,7 @@ class WebSightApp extends StatefulWidget {
   State<WebSightApp> createState() => _WebSightAppState();
 }
 
-class _WebSightAppState extends State<WebSightApp>
-    with WidgetsBindingObserver {
+class _WebSightAppState extends State<WebSightApp> with WidgetsBindingObserver {
   @override
   void initState() {
     super.initState();

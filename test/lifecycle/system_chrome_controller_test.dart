@@ -51,8 +51,8 @@ void main() {
       SystemUiFeature.fromMap(<String, dynamic>{'mode': 'immersive_sticky'}),
       Brightness.dark,
     );
-    final modeCall =
-        calls.firstWhere((c) => c.method == 'SystemChrome.setEnabledSystemUIMode');
+    final modeCall = calls
+        .firstWhere((c) => c.method == 'SystemChrome.setEnabledSystemUIMode');
     expect(
       (modeCall.arguments as Map)['mode'],
       'SystemUiMode.immersiveSticky',
@@ -64,12 +64,13 @@ void main() {
       SystemUiFeature.fromMap(<String, dynamic>{'mode': 'default'}),
       Brightness.light,
     );
-    final modeCall =
-        calls.firstWhere((c) => c.method == 'SystemChrome.setEnabledSystemUIMode');
+    final modeCall = calls
+        .firstWhere((c) => c.method == 'SystemChrome.setEnabledSystemUIMode');
     final args = modeCall.arguments as Map;
     expect(args['mode'], 'SystemUiMode.manual');
     final overlays = (args['overlays'] as List).cast<String>();
-    expect(overlays, containsAll(<String>['SystemUiOverlay.top', 'SystemUiOverlay.bottom']));
+    expect(overlays,
+        containsAll(<String>['SystemUiOverlay.top', 'SystemUiOverlay.bottom']));
   });
 
   test('hiding the status bar drops it from the manual overlays', () async {
@@ -80,8 +81,8 @@ void main() {
       }),
       Brightness.dark,
     );
-    final modeCall =
-        calls.firstWhere((c) => c.method == 'SystemChrome.setEnabledSystemUIMode');
+    final modeCall = calls
+        .firstWhere((c) => c.method == 'SystemChrome.setEnabledSystemUIMode');
     final args = modeCall.arguments as Map;
     final overlays = (args['overlays'] as List).cast<String>();
     expect(overlays.contains('SystemUiOverlay.top'), isFalse);
@@ -90,26 +91,26 @@ void main() {
 
   test('auto icon_brightness flips with the active theme brightness', () {
     expect(
-      SystemChromeController.iconBrightnessForTest(
-          'auto', themeBrightness: Brightness.dark),
+      SystemChromeController.iconBrightnessForTest('auto',
+          themeBrightness: Brightness.dark),
       Brightness.light,
     );
     expect(
-      SystemChromeController.iconBrightnessForTest(
-          'auto', themeBrightness: Brightness.light),
+      SystemChromeController.iconBrightnessForTest('auto',
+          themeBrightness: Brightness.light),
       Brightness.dark,
     );
   });
 
   test('explicit light/dark icon_brightness ignore the theme', () {
     expect(
-      SystemChromeController.iconBrightnessForTest(
-          'light', themeBrightness: Brightness.light),
+      SystemChromeController.iconBrightnessForTest('light',
+          themeBrightness: Brightness.light),
       Brightness.light,
     );
     expect(
-      SystemChromeController.iconBrightnessForTest(
-          'dark', themeBrightness: Brightness.dark),
+      SystemChromeController.iconBrightnessForTest('dark',
+          themeBrightness: Brightness.dark),
       Brightness.dark,
     );
   });

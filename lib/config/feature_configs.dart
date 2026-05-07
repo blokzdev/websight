@@ -604,10 +604,8 @@ class SystemUiFeature {
     if (raw == null) return _defaultPadEdges;
     final list = _strList(raw);
     if (list.isEmpty) return const <String>{};
-    final filtered = list
-        .map((e) => e.toLowerCase())
-        .where(_validPadEdges.contains)
-        .toSet();
+    final filtered =
+        list.map((e) => e.toLowerCase()).where(_validPadEdges.contains).toSet();
     return filtered;
   }
 }
@@ -640,8 +638,7 @@ class MultiWindowFeature {
     return MultiWindowFeature(
       enabled: _bool(map['enabled'], fallback: true),
       closeOnParentHost: _bool(map['close_on_parent_host'], fallback: true),
-      reloadParentOnClose:
-          _bool(map['reload_parent_on_close'], fallback: true),
+      reloadParentOnClose: _bool(map['reload_parent_on_close'], fallback: true),
     );
   }
 }

@@ -252,8 +252,7 @@ class JsBridge {
           // routed back to the wrapped site close the popup), declared
           // external allowlist (so the OAuth provider's host loads), and
           // the URL's own host (catch-all for the provider).
-          final parentHosts =
-              config.security.restrictToHosts.toSet();
+          final parentHosts = config.security.restrictToHosts.toSet();
           final allowedHosts = <String>{
             ...config.security.restrictToHosts,
             ...config.navigation.externalAllowlist,

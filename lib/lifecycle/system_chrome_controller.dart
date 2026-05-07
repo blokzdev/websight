@@ -76,13 +76,13 @@ class SystemChromeController {
       themeBrightness: themeBrightness,
     );
     return SystemUiOverlayStyle(
-      statusBarColor:
-          feature.statusBar.transparent ? Colors.transparent : null,
+      statusBarColor: feature.statusBar.transparent ? Colors.transparent : null,
       // iOS uses statusBarBrightness to mean "the brightness OF the status
       // bar background"; on Android it's a no-op. We still set it so the
       // intent is captured if/when iOS support lands.
-      statusBarBrightness:
-          statusIconBrightness == Brightness.light ? Brightness.dark : Brightness.light,
+      statusBarBrightness: statusIconBrightness == Brightness.light
+          ? Brightness.dark
+          : Brightness.light,
       statusBarIconBrightness: statusIconBrightness,
       systemNavigationBarColor:
           feature.navigationBar.transparent ? Colors.transparent : null,

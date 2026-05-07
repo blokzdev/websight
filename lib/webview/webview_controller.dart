@@ -164,8 +164,7 @@ class WebsightWebViewController extends ChangeNotifier {
       }
     }
     final statuses = await permissionsToRequest.toList().request();
-    final allGranted =
-        statuses.values.every((s) => s.isGranted || s.isLimited);
+    final allGranted = statuses.values.every((s) => s.isGranted || s.isLimited);
     if (allGranted) {
       await request.grant();
     } else {
@@ -239,8 +238,8 @@ class WebsightWebViewController extends ChangeNotifier {
     // the configured edge-to-edge on the next route build.
     unawaited(SystemChromeController.resetToDefault());
     if (_lockedOrientationForFullscreen) {
-      unawaited(SystemChrome.setPreferredOrientations(
-          const <DeviceOrientation>[]));
+      unawaited(
+          SystemChrome.setPreferredOrientations(const <DeviceOrientation>[]));
       _lockedOrientationForFullscreen = false;
     }
   }

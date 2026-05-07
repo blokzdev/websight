@@ -178,8 +178,8 @@ class _PopupWindowState extends State<PopupWindow> {
 
   @override
   Widget build(BuildContext context) {
-    final title = widget.title ??
-        (_displayHost.isNotEmpty ? _displayHost : 'Sign in');
+    final title =
+        widget.title ?? (_displayHost.isNotEmpty ? _displayHost : 'Sign in');
     return PopScope(
       canPop: false,
       onPopInvokedWithResult: (didPop, _) async {
