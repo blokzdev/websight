@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 
 import 'package:device_info_plus/device_info_plus.dart';
@@ -7,8 +8,10 @@ import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:url_launcher/url_launcher.dart';
+import 'package:websight/config/feature_configs.dart';
 import 'package:websight/config/webview_config.dart';
 import 'package:websight/shell/route_paths.dart';
+import 'package:websight/webview/popup_window.dart';
 import 'package:webview_flutter/webview_flutter.dart';
 
 /// Stable error codes returned to the JS bridge layer. Mirrors the codes used
@@ -35,12 +38,21 @@ class JsBridge {
   JsBridge({
     required this.controller,
     required this.config,
+    required this.features,
     required this.context,
   });
 
   final WebViewController controller;
   final WebSightConfig config;
+  final WebSightFeatures features;
   final BuildContext context;
+
+  /// Methods built into WebSight that don't need to appear in the
+  /// integrator's `js_bridge.methods` allowlist. The bridge JS shim posts
+  /// these on behalf of the page (for `window.open` interception, etc.) —
+  /// requiring an allowlist entry just for plumbing is friction without
+  /// security value, since they're still gated by [_isOriginAllowed].
+  static const Set<String> _builtinMethods = <String>{'openPopup'};
 
   static const MethodChannel _platform =
       MethodChannel('websight/method_channel');
@@ -97,9 +109,8 @@ class JsBridge {
       return;
     }
 
-    final isAllowedMethod = config.jsBridge.methods.any(
-      (m) => m.split('(').first == method,
-    );
+    final isAllowedMethod = _builtinMethods.contains(method) ||
+        config.jsBridge.methods.any((m) => m.split('(').first == method);
     if (!isAllowedMethod) {
       debugPrint(
           'JsBridge: method "$method" not in jsBridge.methods allowlist');
@@ -220,6 +231,49 @@ class JsBridge {
             await _rejectCallback(
                 callbackId, BridgeErrorCodes.unsupported, 'Cannot launch URL');
           }
+          break;
+
+        case 'openPopup':
+          if (!features.multiWindow.enabled) {
+            await _rejectCallback(callbackId, BridgeErrorCodes.unsupported,
+                'Multi-window popups disabled');
+            return;
+          }
+          final raw = (params['url'] as String?) ?? '';
+          final uri = Uri.tryParse(raw);
+          if (uri == null ||
+              !uri.hasScheme ||
+              (uri.scheme != 'http' && uri.scheme != 'https')) {
+            await _rejectCallback(
+                callbackId, BridgeErrorCodes.args, 'Invalid popup URL');
+            return;
+          }
+          if (!context.mounted) return;
+          // Build the popup's allowlist: parent hosts (so OAuth callbacks
+          // routed back to the wrapped site close the popup), declared
+          // external allowlist (so the OAuth provider's host loads), and
+          // the URL's own host (catch-all for the provider).
+          final parentHosts = config.security.restrictToHosts.toSet();
+          final allowedHosts = <String>{
+            ...config.security.restrictToHosts,
+            ...config.navigation.externalAllowlist,
+            uri.host,
+          };
+          unawaited(
+            PopupWindow.push(
+              context,
+              initialUrl: raw,
+              parentHosts: parentHosts,
+              allowedHosts: allowedHosts,
+              closeOnParentHost: features.multiWindow.closeOnParentHost,
+              onClosed: () {
+                if (features.multiWindow.reloadParentOnClose) {
+                  unawaited(controller.reload());
+                }
+              },
+            ),
+          );
+          await _resolveCallback(callbackId, true);
           break;
 
         case 'registerHttpDownload':
