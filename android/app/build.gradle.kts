@@ -132,7 +132,7 @@ dependencies {
     // Play services for in-app updates and integrity
     implementation("com.google.android.play:app-update:2.1.0")
     implementation("com.google.android.play:app-update-ktx:2.1.0")
-    implementation("com.google.android.play:integrity:1.4.0")
+    implementation("com.google.android.play:integrity:1.6.0")
 
     // FileProvider, browser custom tabs
     implementation("androidx.browser:browser:1.10.0")
