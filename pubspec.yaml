@@ -13,7 +13,7 @@ dependencies:
   firebase_analytics: ^12.3.0
   firebase_core: ^4.2.0
   firebase_crashlytics: ^5.2.0
-  firebase_messaging: ^16.0.3
+  firebase_messaging: ^16.2.1
   flutter:
     sdk: flutter
   go_router: ^17.2.3
